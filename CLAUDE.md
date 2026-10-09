@@ -25,6 +25,7 @@ backend/
   internal/<domínio>/  # ideas, users, events... handler, serviço e queries juntos por domínio
   db/migrations/       # arquivos do goose
   db/queries/          # SQL que o sqlc lê
+  db/seed/             # dados fictícios só para o banco local
 ```
 
 - Nada de pasta `utils`, `helpers` ou `common`. Código mora no domínio a que pertence.
@@ -42,6 +43,7 @@ backend/
 4. **Segredos nunca entram no repositório.** Credenciais (Discord client secret, string do banco) vivem em `.env`, que está no `.gitignore`. Mantenha um `.env.example` atualizado sem valores reais.
 5. **Escreva o mínimo que funciona** (Ponytail ligado), mas **nunca** corte validação na entrada da API, tratamento de erro, segurança ou acessibilidade.
 6. Toda rota nova tem teste cobrindo o caminho feliz e a validação.
+7. **O repositório é público.** Além de segredos, nunca entram: dados pessoais reais (nomes, Discord IDs, e-mails de alunos), dumps ou backups de banco, logs com dados de usuário. Dado de teste é fictício, mora em `db/seed/` e roda só no banco local — nunca por migration. Rota que grava dados não vai para produção sem login.
 
 ## Fluxo de cada ticket
 
@@ -100,4 +102,27 @@ fix/validacao-slots
 
 ## Comandos
 
-_A preencher conforme o projeto nasce (subir o banco, rodar migrations, gerar sqlc, rodar testes, subir front e back)._
+Primeira vez: `cp .env.example .env` e troque a senha. A API não lê o `.env` sozinha — exporte antes, na raiz: `set -a; . ./.env; set +a`.
+
+```sh
+# banco (Postgres na porta 5450, cria também o comunica_test)
+docker compose up -d
+
+# migrations (goose instalado na máquina) — dev e teste
+goose -dir backend/db/migrations postgres "$DATABASE_URL" up
+goose -dir backend/db/migrations postgres "$TEST_DATABASE_URL" up
+
+# usuário fictício de teste, só no banco local (id 1 = DEV_AUTHOR_ID)
+docker compose exec -T db psql -U comunica -d comunica < backend/db/seed/dev.sql
+
+# gerar código do sqlc (via Docker, versão fixa) depois de mudar migrations ou queries
+cd backend && docker run --rm -u "$(id -u):$(id -g)" -v "$PWD":/src -w /src sqlc/sqlc:1.29.0 generate
+
+# testes (sem TEST_DATABASE_URL, os que usam banco são pulados)
+cd backend && go vet ./... && go test ./...
+
+# subir a API em http://localhost:8090
+cd backend && go run ./cmd/api
+```
+
+_Front: a preencher no ticket `feat/front-mural`._
