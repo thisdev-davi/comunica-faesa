@@ -12,7 +12,7 @@ A conversa dos grupos acontece no Discord da comunidade; a plataforma não tem c
 Em desenvolvimento, construído em fatias verticais (tela → API → banco).
 
 - [x] Fatia 1, back: postar e listar ideias (`POST` / `GET /api/ideas`)
-- [ ] Fatia 1, front: página do mural e formulário ([#2](https://github.com/thisdev-davi/comunica-faesa/issues/2))
+- [x] Fatia 1, front: tela provisória do mural e formulário (a identidade visual vem depois)
 - [ ] Login com Discord
 - [ ] Demais funcionalidades do MVP (ver [PRD](docs/PRD.md))
 
@@ -28,7 +28,7 @@ Em desenvolvimento, construído em fatias verticais (tela → API → banco).
 
 ## Rodando localmente
 
-Pré-requisitos: Go, Docker com Compose e [goose](https://github.com/pressly/goose).
+Pré-requisitos: Go, Node.js 20.9+, Docker com Compose e [goose](https://github.com/pressly/goose).
 
 ```sh
 cp .env.example .env              # troque a senha
@@ -42,6 +42,9 @@ docker compose exec -T db psql -U comunica -d comunica < backend/db/seed/dev.sql
 cd backend
 go test ./...                     # testes
 go run ./cmd/api                  # API em http://localhost:8090
+
+# em outro terminal, na raiz
+cd frontend && npm install && npm run dev   # mural em http://localhost:3000
 ```
 
 Teste rápido:
@@ -63,6 +66,8 @@ backend/
   db/migrations/     migrations do goose
   db/queries/        SQL lido pelo sqlc
   db/seed/           dados fictícios, só para uso local
+frontend/
+  app/               páginas e componentes do Next.js (App Router)
 docs/
   PRD.md             escopo do MVP e regras de negócio
   IDEIA.md           visão e fases futuras
