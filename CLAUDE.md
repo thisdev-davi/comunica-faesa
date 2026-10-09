@@ -25,6 +25,7 @@ backend/
   internal/<domínio>/  # ideas, users, events... handler, serviço e queries juntos por domínio
   db/migrations/       # arquivos do goose
   db/queries/          # SQL que o sqlc lê
+  db/seed/             # dados fictícios só para o banco local
 ```
 
 - Nada de pasta `utils`, `helpers` ou `common`. Código mora no domínio a que pertence.
@@ -42,6 +43,7 @@ backend/
 4. **Segredos nunca entram no repositório.** Credenciais (Discord client secret, string do banco) vivem em `.env`, que está no `.gitignore`. Mantenha um `.env.example` atualizado sem valores reais.
 5. **Escreva o mínimo que funciona** (Ponytail ligado), mas **nunca** corte validação na entrada da API, tratamento de erro, segurança ou acessibilidade.
 6. Toda rota nova tem teste cobrindo o caminho feliz e a validação.
+7. **O repositório é público.** Além de segredos, nunca entram: dados pessoais reais (nomes, Discord IDs, e-mails de alunos), dumps ou backups de banco, logs com dados de usuário. Dado de teste é fictício, mora em `db/seed/` e roda só no banco local — nunca por migration. Rota que grava dados não vai para produção sem login.
 
 ## Fluxo de cada ticket
 
