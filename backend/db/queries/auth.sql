@@ -3,7 +3,7 @@
 INSERT INTO users (discord_id, name, avatar_url)
 VALUES ($1, $2, $3)
 ON CONFLICT (discord_id) DO UPDATE SET name = EXCLUDED.name, avatar_url = EXCLUDED.avatar_url
-RETURNING id;
+RETURNING id, course;
 
 -- name: CreateSession :exec
 INSERT INTO sessions (token_hash, user_id, expires_at) VALUES ($1, $2, $3);
@@ -16,3 +16,6 @@ WHERE s.token_hash = $1 AND s.expires_at > now();
 
 -- name: DeleteSession :exec
 DELETE FROM sessions WHERE token_hash = $1;
+
+-- name: SetUserCourse :exec
+UPDATE users SET course = $2 WHERE id = $1;
