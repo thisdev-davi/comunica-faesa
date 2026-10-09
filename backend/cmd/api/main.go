@@ -57,6 +57,7 @@ func run() error {
 	mux.HandleFunc("GET /api/auth/discord/callback", a.Callback)
 	mux.HandleFunc("POST /api/auth/logout", a.Logout)
 	mux.HandleFunc("GET /api/me", a.Me)
+	mux.HandleFunc("PATCH /api/me", a.SetCourse)
 	mux.HandleFunc("POST /api/ideas", h.Create)
 	mux.HandleFunc("GET /api/ideas", h.List)
 

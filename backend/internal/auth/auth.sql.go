@@ -60,11 +60,25 @@ func (q *Queries) GetSessionUser(ctx context.Context, tokenHash []byte) (GetSess
 	return i, err
 }
 
+const setUserCourse = `-- name: SetUserCourse :exec
+UPDATE users SET course = $2 WHERE id = $1
+`
+
+type SetUserCourseParams struct {
+	ID     int64   `json:"id"`
+	Course *string `json:"course"`
+}
+
+func (q *Queries) SetUserCourse(ctx context.Context, arg SetUserCourseParams) error {
+	_, err := q.db.Exec(ctx, setUserCourse, arg.ID, arg.Course)
+	return err
+}
+
 const upsertDiscordUser = `-- name: UpsertDiscordUser :one
 INSERT INTO users (discord_id, name, avatar_url)
 VALUES ($1, $2, $3)
 ON CONFLICT (discord_id) DO UPDATE SET name = EXCLUDED.name, avatar_url = EXCLUDED.avatar_url
-RETURNING id
+RETURNING id, course
 `
 
 type UpsertDiscordUserParams struct {
@@ -73,10 +87,15 @@ type UpsertDiscordUserParams struct {
 	AvatarUrl *string `json:"avatar_url"`
 }
 
+type UpsertDiscordUserRow struct {
+	ID     int64   `json:"id"`
+	Course *string `json:"course"`
+}
+
 // Nome e foto acompanham o Discord: são regravados a cada login.
-func (q *Queries) UpsertDiscordUser(ctx context.Context, arg UpsertDiscordUserParams) (int64, error) {
+func (q *Queries) UpsertDiscordUser(ctx context.Context, arg UpsertDiscordUserParams) (UpsertDiscordUserRow, error) {
 	row := q.db.QueryRow(ctx, upsertDiscordUser, arg.DiscordID, arg.Name, arg.AvatarUrl)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
+	var i UpsertDiscordUserRow
+	err := row.Scan(&i.ID, &i.Course)
+	return i, err
 }

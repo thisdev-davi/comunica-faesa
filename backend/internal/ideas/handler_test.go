@@ -79,11 +79,14 @@ func TestCreateRejectsBadInput(t *testing.T) {
 	}
 }
 
-func TestCreateSessionErrorIs500(t *testing.T) {
+func TestSessionErrorIs500(t *testing.T) {
 	failing := func(*http.Request) (int64, error) { return 0, errors.New("banco fora") }
-	rec := do(t, NewHandler(nil, failing).Create, http.MethodPost, validBody)
-	if rec.Code != 500 || decode[errorResponse](t, rec).Error != "internal" {
-		t.Fatalf("status = %d (%s), quer 500 internal", rec.Code, rec.Body)
+	h := NewHandler(nil, failing)
+	for method, hf := range map[string]http.HandlerFunc{"POST": h.Create, "GET": h.List} {
+		rec := do(t, hf, method, validBody)
+		if rec.Code != 500 || decode[errorResponse](t, rec).Error != "internal" {
+			t.Errorf("%s: status = %d (%s), quer 500 internal", method, rec.Code, rec.Body)
+		}
 	}
 }
 
@@ -146,6 +149,23 @@ func TestCreateAndList(t *testing.T) {
 	list := decode[struct{ Items []ideaResponse }](t, rec)
 	if len(list.Items) != 2 || list.Items[0].ID != second.ID || list.Items[1].ID != first.ID {
 		t.Fatalf("ordem errada, quer [%d %d]: %+v", second.ID, first.ID, list.Items)
+	}
+
+	// Com 4 ideias, o visitante vê só as 3 mais recentes e o logado vê todas.
+	for range 2 {
+		if rec = do(t, h.Create, http.MethodPost, validBody); rec.Code != 201 {
+			t.Fatalf("POST: %d (%s)", rec.Code, rec.Body)
+		}
+	}
+	all := decode[struct{ Items []ideaResponse }](t, do(t, h.List, http.MethodGet, "")).Items
+	preview := decode[struct{ Items []ideaResponse }](t, do(t, NewHandler(pool, loggedAs(0)).List, http.MethodGet, "")).Items
+	if len(all) != 4 || len(preview) != previewSize {
+		t.Fatalf("logado viu %d (quer 4), visitante viu %d (quer %d)", len(all), len(preview), previewSize)
+	}
+	for i := range preview {
+		if preview[i].ID != all[i].ID {
+			t.Errorf("prévia não são as mais recentes: %+v", preview)
+		}
 	}
 }
 

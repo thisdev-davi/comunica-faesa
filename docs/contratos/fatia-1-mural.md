@@ -9,6 +9,8 @@ Este contrato é o acordo entre front e back. Os dois lados codam contra ele em 
 Login com Discord ([fatia 2](fatia-2-login.md)), habilidades, filtros, busca, paginação, comentários, "quero participar", troca de status.
 
 > **Atualizado pela [fatia 2](fatia-2-login.md):** o autor da ideia é o usuário da sessão. O usuário fixo (`DEV_AUTHOR_ID`) usado nesta fatia foi removido.
+>
+> **Atualizado pela [fatia 3](fatia-3-cadastro.md):** `GET /api/ideas` devolve no máximo as 3 ideias mais recentes para visitante; logado vê todas.
 
 ## Banco
 
@@ -122,7 +124,7 @@ Erros:
 
 ### `GET /api/ideas` — lista o mural
 
-Resposta `200 OK`, mais recentes primeiro:
+Resposta `200 OK`, mais recentes primeiro. Visitante (sem sessão) recebe no máximo 3 itens; logado recebe todos ([fatia 3](fatia-3-cadastro.md)).
 
 ```json
 {

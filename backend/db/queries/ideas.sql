@@ -12,8 +12,10 @@ FROM i
 JOIN users u ON u.id = i.author_id;
 
 -- name: ListIdeas :many
+-- max NULL = sem limite (LIMIT NULL é o mesmo que não ter LIMIT); o visitante recebe só uma prévia.
 SELECT i.id, i.title, i.description, i.course, i.category, i.slots, i.status, i.created_at,
        u.id AS author_id, u.name AS author_name
 FROM ideas i
 JOIN users u ON u.id = i.author_id
-ORDER BY i.created_at DESC, i.id DESC;
+ORDER BY i.created_at DESC, i.id DESC
+LIMIT sqlc.narg('max');

@@ -11,11 +11,15 @@ import (
 	"unicode/utf8"
 )
 
-const maxBodyBytes = 64 << 10 // 64 KB
+const (
+	maxBodyBytes = 64 << 10 // 64 KB
+	previewSize  = 3        // quantas ideias o visitante vê (docs/contratos/fatia-3-cadastro.md)
+)
 
 // Listas fixas do contrato (docs/contratos/fatia-1-mural.md). O front mantém a mesma lista com os rótulos.
+// Courses é exportada porque o cadastro (pacote auth) valida o curso do aluno contra a mesma lista.
 var (
-	courses    = map[string]bool{"cc": true, "eng": true, "ads": true}
+	Courses    = map[string]bool{"cc": true, "eng": true, "ads": true}
 	categories = map[string]bool{
 		"web": true, "mobile": true, "ai": true, "data": true, "games": true,
 		"competitive_programming": true, "security": true, "iot": true, "other": true,
@@ -104,8 +108,18 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, toResponse(ListIdeasRow(row)))
 }
 
+// List devolve o mural: tudo para quem está logado, só as mais recentes para visitante.
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
-	rows, err := h.q.ListIdeas(r.Context())
+	userID, err := h.userID(r)
+	if err != nil {
+		internalError(w, "session", err)
+		return
+	}
+	var max *int32 // nil vira NULL no SQL: sem limite
+	if userID == 0 {
+		max = new(int32(previewSize)) // Go 1.26+: new aceita um valor e devolve o ponteiro para uma cópia dele
+	}
+	rows, err := h.q.ListIdeas(r.Context(), max)
 	if err != nil {
 		internalError(w, "list ideas", err)
 		return
@@ -127,8 +141,8 @@ func (req *createRequest) validate() map[string]string {
 	fields := map[string]string{}
 	checkText(fields, "title", req.Title, 3, 120)
 	checkText(fields, "description", req.Description, 1, 5000)
-	checkOption(fields, "course", req.Course, courses)
-	checkOption(fields, "category", req.Category, categories)
+	CheckOption(fields, "course", req.Course, Courses)
+	CheckOption(fields, "category", req.Category, categories)
 	if req.Slots < 1 || req.Slots > 20 {
 		fields["slots"] = "deve ser entre 1 e 20"
 	}
@@ -147,7 +161,8 @@ func checkText(fields map[string]string, name, v string, minLen, maxLen int) {
 	}
 }
 
-func checkOption(fields map[string]string, name, v string, allowed map[string]bool) {
+// CheckOption grava em fields o erro de um valor que precisa estar na lista; exportada para o cadastro usar as mesmas mensagens.
+func CheckOption(fields map[string]string, name, v string, allowed map[string]bool) {
 	switch {
 	case v == "":
 		fields[name] = "obrigatório"
