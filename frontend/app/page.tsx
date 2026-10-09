@@ -1,7 +1,9 @@
 import { unstable_rethrow } from "next/navigation";
+import Link from "next/link";
 import { Suspense } from "react";
 import { IdeaForm } from "./idea-form";
 import { API_URL, CATEGORIES, COURSES, type Idea } from "./ideas";
+import { getMe } from "./me";
 
 const dateFormat = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "short",
@@ -43,12 +45,26 @@ async function IdeaList() {
   );
 }
 
+// Só quem está logado posta; a API também recusa (401), aqui é só para não mostrar um formulário que vai falhar.
+async function PostIdea() {
+  if (!(await getMe())) {
+    return (
+      <p>
+        <Link href="/login">Entre com Discord</Link> para postar uma ideia.
+      </p>
+    );
+  }
+  return <IdeaForm />;
+}
+
 export default function Home() {
   return (
     <main>
       <h1>Mural de ideias</h1>
       <h2>Postar ideia</h2>
-      <IdeaForm />
+      <Suspense fallback={<p>Carregando…</p>}>
+        <PostIdea />
+      </Suspense>
       <h2>Ideias</h2>
       <Suspense fallback={<p>Carregando…</p>}>
         <IdeaList />

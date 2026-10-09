@@ -2,7 +2,10 @@ module github.com/thisdev-davi/comunica-faesa/backend
 
 go 1.27.1
 
-require github.com/jackc/pgx/v5 v5.11.0
+require (
+	github.com/jackc/pgx/v5 v5.11.0
+	golang.org/x/oauth2 v0.36.0
+)
 
 require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect

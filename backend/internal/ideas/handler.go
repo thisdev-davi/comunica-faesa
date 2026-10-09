@@ -24,12 +24,12 @@ var (
 
 type Handler struct {
 	q *Queries
-	// ponytail: autor fixo vindo de DEV_AUTHOR_ID até o ticket de login; 0 = sem autor, POST responde 401.
-	authorID int64
+	// userID diz quem está logado (0 = visitante). Recebe uma função, não o pacote auth: os testes trocam por um stub.
+	userID func(*http.Request) (int64, error)
 }
 
-func NewHandler(db DBTX, authorID int64) *Handler {
-	return &Handler{q: New(db), authorID: authorID}
+func NewHandler(db DBTX, userID func(*http.Request) (int64, error)) *Handler {
+	return &Handler{q: New(db), userID: userID}
 }
 
 type createRequest struct {
@@ -63,7 +63,12 @@ type errorResponse struct {
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	if h.authorID == 0 {
+	authorID, err := h.userID(r)
+	if err != nil {
+		internalError(w, "session", err)
+		return
+	}
+	if authorID == 0 {
 		writeJSON(w, http.StatusUnauthorized, errorResponse{Error: "unauthenticated"})
 		return
 	}
@@ -85,7 +90,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	row, err := h.q.CreateIdea(r.Context(), CreateIdeaParams{
-		AuthorID:    h.authorID,
+		AuthorID:    authorID,
 		Title:       req.Title,
 		Description: req.Description,
 		Course:      req.Course,
