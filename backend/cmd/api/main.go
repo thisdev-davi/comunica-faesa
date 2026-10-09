@@ -3,16 +3,16 @@ package main
 import (
 	"cmp"
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
-	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/thisdev-davi/comunica-faesa/backend/internal/auth"
 	"github.com/thisdev-davi/comunica-faesa/backend/internal/ideas"
 )
 
@@ -24,21 +24,21 @@ func main() {
 }
 
 func run() error {
-	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" {
-		return errors.New("DATABASE_URL não definida")
+	var missing []string
+	env := func(key string) string {
+		v := os.Getenv(key)
+		if v == "" {
+			missing = append(missing, key)
+		}
+		return v
+	}
+	dbURL := env("DATABASE_URL")
+	clientID, clientSecret := env("DISCORD_CLIENT_ID"), env("DISCORD_CLIENT_SECRET")
+	redirectURL, guildID := env("DISCORD_REDIRECT_URL"), env("DISCORD_GUILD_ID")
+	if len(missing) > 0 {
+		return fmt.Errorf("variáveis não definidas: %s", strings.Join(missing, ", "))
 	}
 	port := cmp.Or(os.Getenv("PORT"), "8090")
-
-	var authorID int64
-	if v := os.Getenv("DEV_AUTHOR_ID"); v != "" {
-		id, err := strconv.ParseInt(v, 10, 64)
-		if err != nil || id < 1 {
-			return fmt.Errorf("DEV_AUTHOR_ID inválido: %q", v)
-		}
-		authorID = id
-		slog.Warn("DEV_AUTHOR_ID definido: POST /api/ideas grava sem login, use só localmente")
-	}
 
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dbURL)
@@ -50,8 +50,13 @@ func run() error {
 		return fmt.Errorf("conectar no banco: %w", err)
 	}
 
-	h := ideas.NewHandler(pool, authorID)
+	a := auth.NewHandler(pool, clientID, clientSecret, redirectURL, guildID)
+	h := ideas.NewHandler(pool, a.UserID)
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /api/auth/discord", a.Login)
+	mux.HandleFunc("GET /api/auth/discord/callback", a.Callback)
+	mux.HandleFunc("POST /api/auth/logout", a.Logout)
+	mux.HandleFunc("GET /api/me", a.Me)
 	mux.HandleFunc("POST /api/ideas", h.Create)
 	mux.HandleFunc("GET /api/ideas", h.List)
 
