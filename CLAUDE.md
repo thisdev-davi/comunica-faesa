@@ -102,7 +102,7 @@ fix/validacao-slots
 
 ## Comandos
 
-Primeira vez: `cp .env.example .env` e troque a senha. A API não lê o `.env` sozinha — exporte antes, na raiz: `set -a; . ./.env; set +a`.
+Primeira vez: `cp .env.example .env`, troque a senha e preencha as variáveis `DISCORD_*` (passo a passo no README, seção "App do Discord"). A API não lê o `.env` sozinha — exporte antes, na raiz: `set -a; . ./.env; set +a`.
 
 ```sh
 # banco (Postgres na porta 5450, cria também o comunica_test)
@@ -112,7 +112,7 @@ docker compose up -d
 goose -dir backend/db/migrations postgres "$DATABASE_URL" up
 goose -dir backend/db/migrations postgres "$TEST_DATABASE_URL" up
 
-# usuário fictício de teste, só no banco local (id 1 = DEV_AUTHOR_ID)
+# autor e ideia fictícios, só no banco local
 docker compose exec -T db psql -U comunica -d comunica < backend/db/seed/dev.sql
 
 # gerar código do sqlc (via Docker, versão fixa) depois de mudar migrations ou queries
@@ -130,7 +130,7 @@ cd backend && go run ./cmd/api
 cd frontend && npm install && npm run dev
 
 # checagens do front
-cd frontend && npx tsc --noEmit && npm run lint && npm run build
+cd frontend && npx next typegen && npx tsc --noEmit && npm run lint && npm run build   # typegen gera os tipos de rota (PageProps)
 ```
 
 O front usa `API_URL` (padrão `http://localhost:8090`) para achar a API Go.

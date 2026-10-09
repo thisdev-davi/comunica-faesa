@@ -13,7 +13,8 @@ Em desenvolvimento, construído em fatias verticais (tela → API → banco).
 
 - [x] Fatia 1, back: postar e listar ideias (`POST` / `GET /api/ideas`)
 - [x] Fatia 1, front: tela provisória do mural e formulário (a identidade visual vem depois)
-- [ ] Login com Discord
+- [x] Fatia 2: login com Discord (só membros do servidor da comunidade)
+- [ ] Fatia 3: escolha de curso no primeiro login e prévia do mural para visitante
 - [ ] Demais funcionalidades do MVP (ver [PRD](docs/PRD.md))
 
 ## Stack
@@ -31,13 +32,13 @@ Em desenvolvimento, construído em fatias verticais (tela → API → banco).
 Pré-requisitos: Go, Node.js 20.9+, Docker com Compose e [goose](https://github.com/pressly/goose).
 
 ```sh
-cp .env.example .env              # troque a senha
+cp .env.example .env              # troque a senha e preencha as DISCORD_* (abaixo)
 set -a; . ./.env; set +a          # exporta as variáveis no shell
 
 docker compose up -d              # Postgres em localhost:5450
 goose -dir backend/db/migrations postgres "$DATABASE_URL" up
 goose -dir backend/db/migrations postgres "$TEST_DATABASE_URL" up
-docker compose exec -T db psql -U comunica -d comunica < backend/db/seed/dev.sql   # usuário fictício
+docker compose exec -T db psql -U comunica -d comunica < backend/db/seed/dev.sql   # ideia fictícia
 
 cd backend
 go test ./...                     # testes
@@ -47,15 +48,17 @@ go run ./cmd/api                  # API em http://localhost:8090
 cd frontend && npm install && npm run dev   # mural em http://localhost:3000
 ```
 
-Teste rápido:
+Teste rápido: `curl localhost:8090/api/ideas` lista o mural. Postar exige login: entre por http://localhost:3000/login.
 
-```sh
-curl -X POST localhost:8090/api/ideas \
-  -d '{"title":"App de carona","description":"Juntar quem mora perto","course":"cc","category":"mobile","slots":3}'
-curl localhost:8090/api/ideas
-```
+### App do Discord
 
-Enquanto não há login, as ideias são criadas pelo usuário fictício do seed (`DEV_AUTHOR_ID`). Sem essa variável, a API recusa criar ideias.
+O login usa OAuth do Discord e só deixa entrar quem está no servidor da comunidade.
+
+1. No [Discord Developer Portal](https://discord.com/developers/applications), crie uma aplicação. Em **OAuth2**, adicione o redirect `http://localhost:3000/api/auth/discord/callback` e copie o **Client ID** e o **Client Secret** para `DISCORD_CLIENT_ID` e `DISCORD_CLIENT_SECRET` no `.env`.
+2. No Discord, ative o **Modo desenvolvedor** (Configurações → Avançado), clique com o botão direito no servidor da comunidade → **Copiar ID** e cole em `DISCORD_GUILD_ID`.
+3. Crie um convite sem expiração do servidor e cole em `DISCORD_INVITE_URL`.
+
+O secret nunca vai para o repositório: ele vive só no `.env`.
 
 ## Estrutura
 
