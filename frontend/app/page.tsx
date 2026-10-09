@@ -1,5 +1,6 @@
 import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
+import { IdeaForm } from "./idea-form";
 import { API_URL, CATEGORIES, COURSES, type Idea } from "./ideas";
 
 const dateFormat = new Intl.DateTimeFormat("pt-BR", {
@@ -46,6 +47,8 @@ export default function Home() {
   return (
     <main>
       <h1>Mural de ideias</h1>
+      <h2>Postar ideia</h2>
+      <IdeaForm />
       <h2>Ideias</h2>
       <Suspense fallback={<p>Carregando…</p>}>
         <IdeaList />
