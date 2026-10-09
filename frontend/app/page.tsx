@@ -1,69 +1,53 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+import { Suspense } from "react";
+import { API_URL, CATEGORIES, COURSES, type Idea } from "./ideas";
+
+const dateFormat = new Intl.DateTimeFormat("pt-BR", {
+  dateStyle: "short",
+  timeStyle: "short",
+  timeZone: "America/Sao_Paulo",
+});
+
+// Roda no servidor e chama o Go direto (sem passar pelo rewrite). Sem cache: o mural é sempre fresco.
+async function IdeaList() {
+  let items: Idea[];
+  try {
+    const res = await fetch(`${API_URL}/api/ideas`);
+    if (!res.ok) throw new Error(`status ${res.status}`);
+    ({ items } = await res.json());
+  } catch (err) {
+    console.error("listar ideias:", err);
+    return <p role="alert">Não foi possível carregar o mural. A API está no ar?</p>;
+  }
+
+  if (items.length === 0) return <p>Nenhuma ideia postada ainda.</p>;
+  return (
+    <ul>
+      {items.map((idea) => (
+        <li key={idea.id}>
+          <h3>{idea.title}</h3>
+          <p>
+            {COURSES[idea.course] ?? idea.course} · {CATEGORIES[idea.category] ?? idea.category} ·{" "}
+            {idea.slots} {idea.slots === 1 ? "vaga" : "vagas"}
+          </p>
+          <p>{idea.description}</p>
+          <p>
+            por {idea.author.name} em{" "}
+            <time dateTime={idea.created_at}>{dateFormat.format(new Date(idea.created_at))}</time>
+          </p>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export default function Home() {
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>
-            To get started, edit the{" "}
-            <code className={styles.code}>page.tsx</code> file.
-          </h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main>
+      <h1>Mural de ideias</h1>
+      <h2>Ideias</h2>
+      <Suspense fallback={<p>Carregando…</p>}>
+        <IdeaList />
+      </Suspense>
+    </main>
   );
 }
