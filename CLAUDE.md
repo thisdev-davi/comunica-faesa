@@ -125,4 +125,12 @@ cd backend && go vet ./... && go test ./...
 cd backend && go run ./cmd/api
 ```
 
-_Front: a preencher no ticket `feat/front-mural`._
+```sh
+# front em http://localhost:3000 (com a API rodando; /api/* é repassado para a API Go)
+cd frontend && npm install && npm run dev
+
+# checagens do front
+cd frontend && npx tsc --noEmit && npm run lint && npm run build
+```
+
+O front usa `API_URL` (padrão `http://localhost:8090`) para achar a API Go.
