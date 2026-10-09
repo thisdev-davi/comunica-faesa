@@ -8,7 +8,7 @@ Este contrato é o acordo entre front e back. Os dois lados codam contra ele em 
 
 Login com Discord (ticket seguinte), habilidades, filtros, busca, paginação, comentários, "quero participar", troca de status.
 
-Enquanto não houver login, toda ideia é criada por um **usuário fixo de teste**, inserido por migration/seed.
+Enquanto não houver login, toda ideia é criada por um **usuário fixo de teste**. Ele vive **só no banco local**: é inserido por `backend/db/seed/dev.sql` (dados fictícios), nunca por migration. A API lê o id dele de `DEV_AUTHOR_ID`; sem essa variável, o `POST` responde `401` — nenhuma escrita sem autor.
 
 ## Banco
 
@@ -41,12 +41,34 @@ Tabela `ideas`:
 
 ## Listas fixas
 
-> ⚠️ **Decisão pendente do Davi:** lista fixa (recomendado) ou texto livre. Se lista fixa, confirmar os valores abaixo.
+Decidido: listas fixas. Valores em inglês; o front mostra os rótulos em português.
 
-- Cursos: `cc` (Ciência da Computação), `eng` (Engenharia), `ads` (ADS).
-- Categorias: _a definir_ (ex.: `web`, `mobile`, `dados_ia`, `jogos`, `outro`).
+| curso | rótulo |
+|---|---|
+| `cc` | Ciência da Computação |
+| `eng` | Engenharia |
+| `ads` | ADS |
 
-A validação acontece na API. O front recebe as mesmas listas (constante compartilhada no MVP; endpoint próprio só se precisar).
+| categoria | rótulo |
+|---|---|
+| `web` | Web |
+| `mobile` | Mobile |
+| `ai` | IA |
+| `data` | Dados |
+| `games` | Jogos |
+| `competitive_programming` | Maratona de Programação |
+| `security` | Segurança |
+| `iot` | IoT / Hardware |
+| `other` | Outro |
+
+A validação acontece na API. O front mantém a mesma lista como constante própria (com os rótulos); endpoint de listas só se precisar.
+
+## Regras de validação
+
+- `title`, `description`, `course` e `category` passam por trim antes de validar; o valor gravado é o limpo. Só espaços conta como vazio.
+- Limites contados em **caracteres**, não bytes (`"ação"` tem 4).
+- Texto com caractere nulo (`\u0000`) é inválido.
+- Corpo da requisição limitado a 64 KB. Campos desconhecidos no JSON são ignorados.
 
 ## Endpoints
 
@@ -93,6 +115,9 @@ Erros:
 }
 ```
 
+- `400 Bad Request` — JSON malformado ou com tipo errado (ex.: `"slots": "3"`): `{ "error": "invalid_json" }`.
+- `401 Unauthorized` — sem autor (hoje: `DEV_AUTHOR_ID` não definido; depois do login: sem sessão): `{ "error": "unauthenticated" }`.
+- `413 Content Too Large` — corpo acima de 64 KB: `{ "error": "body_too_large" }`.
 - `500 Internal Server Error` — `{ "error": "internal" }`, sem vazar detalhe interno.
 
 ### `GET /api/ideas` — lista o mural
@@ -127,8 +152,8 @@ Lista vazia retorna `{ "items": [] }`, nunca `null`. O objeto `items` já deixa 
 
 ## Pronto quando
 
-- [ ] `goose up` cria as tabelas e o usuário de teste.
+- [ ] `goose up` cria as tabelas; o seed local cria o usuário de teste.
 - [ ] `POST` válido retorna 201 e grava; inválido retorna 400 com o campo.
-- [ ] `GET` retorna as ideias na ordem certa, e `[]` quando vazio.
+- [ ] `GET` retorna as ideias na ordem certa, e `{ "items": [] }` quando vazio.
 - [ ] Postar pela tela faz a ideia aparecer no mural.
 - [ ] Testes dos handlers cobrindo sucesso e validação.
