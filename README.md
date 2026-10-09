@@ -14,7 +14,7 @@ Em desenvolvimento, construído em fatias verticais (tela → API → banco).
 - [x] Fatia 1, back: postar e listar ideias (`POST` / `GET /api/ideas`)
 - [x] Fatia 1, front: tela provisória do mural e formulário (a identidade visual vem depois)
 - [x] Fatia 2: login com Discord (só membros do servidor da comunidade)
-- [ ] Fatia 3: escolha de curso no primeiro login e prévia do mural para visitante
+- [x] Fatia 3: escolha de curso no primeiro login e prévia do mural para visitante
 - [ ] Demais funcionalidades do MVP (ver [PRD](docs/PRD.md))
 
 ## Stack
@@ -48,7 +48,7 @@ go run ./cmd/api                  # API em http://localhost:8090
 cd frontend && npm install && npm run dev   # mural em http://localhost:3000
 ```
 
-Teste rápido: `curl localhost:8090/api/ideas` lista o mural. Postar exige login: entre por http://localhost:3000/login.
+Teste rápido: `curl localhost:8090/api/ideas` lista o mural (sem login, só as 3 ideias mais recentes). Postar exige login: entre por http://localhost:3000/login.
 
 ### App do Discord
 
