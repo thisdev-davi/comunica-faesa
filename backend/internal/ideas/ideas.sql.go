@@ -77,6 +77,7 @@ SELECT i.id, i.title, i.description, i.course, i.category, i.slots, i.status, i.
 FROM ideas i
 JOIN users u ON u.id = i.author_id
 ORDER BY i.created_at DESC, i.id DESC
+LIMIT $1
 `
 
 type ListIdeasRow struct {
@@ -92,8 +93,9 @@ type ListIdeasRow struct {
 	AuthorName  string
 }
 
-func (q *Queries) ListIdeas(ctx context.Context) ([]ListIdeasRow, error) {
-	rows, err := q.db.Query(ctx, listIdeas)
+// max NULL = sem limite (LIMIT NULL é o mesmo que não ter LIMIT); o visitante recebe só uma prévia.
+func (q *Queries) ListIdeas(ctx context.Context, max *int32) ([]ListIdeasRow, error) {
+	rows, err := q.db.Query(ctx, listIdeas, max)
 	if err != nil {
 		return nil, err
 	}
