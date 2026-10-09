@@ -117,8 +117,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	}
 	var max *int32 // nil vira NULL no SQL: sem limite
 	if userID == 0 {
-		n := int32(previewSize)
-		max = &n
+		max = new(int32(previewSize)) // Go 1.26+: new aceita um valor e devolve o ponteiro para uma cópia dele
 	}
 	rows, err := h.q.ListIdeas(r.Context(), max)
 	if err != nil {

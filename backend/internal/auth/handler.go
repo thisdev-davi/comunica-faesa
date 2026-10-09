@@ -92,11 +92,11 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		toLogin(w, r, "falhou")
 		return
 	}
+	dest := "/"
 	if user.Course == nil {
-		http.Redirect(w, r, "/cadastro", http.StatusFound)
-		return
+		dest = "/cadastro" // primeiro login: falta escolher o curso
 	}
-	http.Redirect(w, r, "/", http.StatusFound)
+	http.Redirect(w, r, dest, http.StatusFound)
 }
 
 // Me devolve o usuário da sessão, ou 401.
