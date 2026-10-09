@@ -102,4 +102,27 @@ fix/validacao-slots
 
 ## Comandos
 
-_A preencher conforme o projeto nasce (subir o banco, rodar migrations, gerar sqlc, rodar testes, subir front e back)._
+Primeira vez: `cp .env.example .env` e troque a senha. A API não lê o `.env` sozinha — exporte antes, na raiz: `set -a; . ./.env; set +a`.
+
+```sh
+# banco (Postgres na porta 5450, cria também o comunica_test)
+docker compose up -d
+
+# migrations (goose instalado na máquina) — dev e teste
+goose -dir backend/db/migrations postgres "$DATABASE_URL" up
+goose -dir backend/db/migrations postgres "$TEST_DATABASE_URL" up
+
+# usuário fictício de teste, só no banco local (id 1 = DEV_AUTHOR_ID)
+docker compose exec -T db psql -U comunica -d comunica < backend/db/seed/dev.sql
+
+# gerar código do sqlc (via Docker, versão fixa) depois de mudar migrations ou queries
+cd backend && docker run --rm -u "$(id -u):$(id -g)" -v "$PWD":/src -w /src sqlc/sqlc:1.29.0 generate
+
+# testes (sem TEST_DATABASE_URL, os que usam banco são pulados)
+cd backend && go vet ./... && go test ./...
+
+# subir a API em http://localhost:8090
+cd backend && go run ./cmd/api
+```
+
+_Front: a preencher no ticket `feat/front-mural`._
