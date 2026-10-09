@@ -6,8 +6,6 @@ package ideas
 
 import (
 	"time"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Idea struct {
@@ -22,11 +20,17 @@ type Idea struct {
 	CreatedAt   time.Time
 }
 
+type Session struct {
+	TokenHash []byte
+	UserID    int64
+	ExpiresAt time.Time
+}
+
 type User struct {
 	ID        int64
-	DiscordID pgtype.Text
+	DiscordID *string
 	Name      string
-	AvatarUrl pgtype.Text
-	Course    pgtype.Text
+	AvatarUrl *string
+	Course    *string
 	CreatedAt time.Time
 }
