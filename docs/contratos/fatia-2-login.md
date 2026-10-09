@@ -66,7 +66,7 @@ Sempre responde `302`:
 
 | situação | destino |
 |---|---|
-| deu certo | `/` (grava `session`) |
+| deu certo | `/` (grava `session`); `/cadastro` se o usuário ainda não tem curso ([fatia 3](fatia-3-cadastro.md)) |
 | aluno cancelou no Discord (`?error=...`) | `/login?erro=cancelado` |
 | não é membro do servidor | `/login?erro=fora_do_servidor` |
 | `state` ausente ou diferente do cookie, ou qualquer falha (Discord fora, banco) | `/login?erro=falhou` |
@@ -87,7 +87,7 @@ Apaga a sessão no banco e o cookie. Responde `204`, com ou sem sessão.
 
 ### Mudança na fatia 1
 
-`POST /api/ideas` sem sessão válida responde `401 { "error": "unauthenticated" }`. O autor da ideia é o usuário da sessão. `GET /api/ideas` continua público.
+`POST /api/ideas` sem sessão válida responde `401 { "error": "unauthenticated" }`. O autor da ideia é o usuário da sessão. `GET /api/ideas` continua público (a [fatia 3](fatia-3-cadastro.md) limita o visitante a 3 itens).
 
 ## Variáveis de ambiente
 
