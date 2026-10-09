@@ -18,6 +18,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/endpoints"
+
+	"github.com/thisdev-davi/comunica-faesa/backend/internal/ideas"
 )
 
 const (
@@ -25,6 +27,7 @@ const (
 	stateCookie   = "oauth_state"
 	sessionTTL    = 30 * 24 * time.Hour
 	stateTTL      = 10 * time.Minute
+	maxBodyBytes  = 64 << 10 // 64 KB
 )
 
 var errNotMember = errors.New("não é membro do servidor")
@@ -61,7 +64,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, h.oauth.AuthCodeURL(state), http.StatusFound)
 }
 
-// Callback recebe a volta do Discord e sempre responde com redirect: para / se deu certo, para /login?erro=... se não.
+// Callback recebe a volta do Discord e sempre responde com redirect: para / (ou /cadastro, se falta o curso) se deu certo, para /login?erro=... se não.
 func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	h.setCookie(w, stateCookie, "", "/api/auth", -1) // o state vale uma vez só
 	q := r.URL.Query()
@@ -76,17 +79,21 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, err := h.discordUser(r.Context(), q.Get("code"))
+	user, err := h.discordUser(r.Context(), q.Get("code"))
 	if errors.Is(err, errNotMember) {
 		toLogin(w, r, "fora_do_servidor")
 		return
 	}
 	if err == nil {
-		err = h.startSession(r.Context(), w, userID)
+		err = h.startSession(r.Context(), w, user.ID)
 	}
 	if err != nil {
 		slog.Error("login discord", "err", err)
 		toLogin(w, r, "falhou")
+		return
+	}
+	if user.Course == nil {
+		http.Redirect(w, r, "/cadastro", http.StatusFound)
 		return
 	}
 	http.Redirect(w, r, "/", http.StatusFound)
@@ -103,6 +110,46 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "me", err)
 		return
 	}
+	writeJSON(w, http.StatusOK, u)
+}
+
+// SetCourse grava o curso do aluno logado (cadastro) e devolve o mesmo corpo do Me.
+func (h *Handler) SetCourse(w http.ResponseWriter, r *http.Request) {
+	u, err := h.session(r)
+	if errors.Is(err, pgx.ErrNoRows) {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthenticated"})
+		return
+	}
+	if err != nil {
+		internalError(w, "session", err)
+		return
+	}
+
+	var req struct {
+		Course string `json:"course"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxBodyBytes)).Decode(&req); err != nil {
+		var tooBig *http.MaxBytesError
+		if errors.As(err, &tooBig) {
+			writeJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": "body_too_large"})
+			return
+		}
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid_json"})
+		return
+	}
+	course := strings.TrimSpace(req.Course)
+	fields := map[string]string{}
+	ideas.CheckOption(fields, "course", course, ideas.Courses)
+	if len(fields) > 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "validation_failed", "fields": fields})
+		return
+	}
+
+	if err := h.q.SetUserCourse(r.Context(), SetUserCourseParams{ID: u.ID, Course: &course}); err != nil {
+		internalError(w, "set course", err)
+		return
+	}
+	u.Course = &course
 	writeJSON(w, http.StatusOK, u)
 }
 
@@ -137,13 +184,13 @@ func (h *Handler) session(r *http.Request) (GetSessionUserRow, error) {
 }
 
 // discordUser troca o code pelo token, confere se a pessoa está no servidor e grava (ou atualiza) o usuário.
-func (h *Handler) discordUser(ctx context.Context, code string) (int64, error) {
+func (h *Handler) discordUser(ctx context.Context, code string) (UpsertDiscordUserRow, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	tok, err := h.oauth.Exchange(ctx, code)
 	if err != nil {
-		return 0, fmt.Errorf("trocar code: %w", err)
+		return UpsertDiscordUserRow{}, fmt.Errorf("trocar code: %w", err)
 	}
 	client := h.oauth.Client(ctx, tok) // põe o "Authorization: Bearer" em cada chamada
 
@@ -154,17 +201,17 @@ func (h *Handler) discordUser(ctx context.Context, code string) (int64, error) {
 		Avatar     string `json:"avatar"`
 	}
 	if _, err := get(ctx, client, h.discordAPI+"/users/@me", &u); err != nil {
-		return 0, err
+		return UpsertDiscordUserRow{}, err
 	}
 	if u.ID == "" {
-		return 0, errors.New("discord não devolveu o id do usuário")
+		return UpsertDiscordUserRow{}, errors.New("discord não devolveu o id do usuário")
 	}
 	status, err := get(ctx, client, h.discordAPI+"/users/@me/guilds/"+h.guildID+"/member", nil)
 	if status == http.StatusNotFound {
-		return 0, errNotMember
+		return UpsertDiscordUserRow{}, errNotMember
 	}
 	if err != nil {
-		return 0, err
+		return UpsertDiscordUserRow{}, err
 	}
 
 	var avatar *string
