@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import { API_URL, CATEGORIES, COURSES, type Idea } from "./ideas";
 
@@ -15,6 +16,7 @@ async function IdeaList() {
     if (!res.ok) throw new Error(`status ${res.status}`);
     ({ items } = await res.json());
   } catch (err) {
+    unstable_rethrow(err); // deixa passar os erros internos do Next (ex.: fim da pré-renderização)
     console.error("listar ideias:", err);
     return <p role="alert">Não foi possível carregar o mural. A API está no ar?</p>;
   }
