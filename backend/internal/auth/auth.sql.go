@@ -15,9 +15,9 @@ INSERT INTO sessions (token_hash, user_id, expires_at) VALUES ($1, $2, $3)
 `
 
 type CreateSessionParams struct {
-	TokenHash []byte
-	UserID    int64
-	ExpiresAt time.Time
+	TokenHash []byte    `json:"token_hash"`
+	UserID    int64     `json:"user_id"`
+	ExpiresAt time.Time `json:"expires_at"`
 }
 
 func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) error {
@@ -42,10 +42,10 @@ WHERE s.token_hash = $1 AND s.expires_at > now()
 `
 
 type GetSessionUserRow struct {
-	ID        int64
-	Name      string
-	AvatarUrl *string
-	Course    *string
+	ID        int64   `json:"id"`
+	Name      string  `json:"name"`
+	AvatarUrl *string `json:"avatar_url"`
+	Course    *string `json:"course"`
 }
 
 func (q *Queries) GetSessionUser(ctx context.Context, tokenHash []byte) (GetSessionUserRow, error) {
@@ -68,9 +68,9 @@ RETURNING id
 `
 
 type UpsertDiscordUserParams struct {
-	DiscordID *string
-	Name      string
-	AvatarUrl *string
+	DiscordID *string `json:"discord_id"`
+	Name      string  `json:"name"`
+	AvatarUrl *string `json:"avatar_url"`
 }
 
 // Nome e foto acompanham o Discord: são regravados a cada login.
