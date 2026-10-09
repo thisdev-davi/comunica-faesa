@@ -29,7 +29,26 @@ async function IdeaList() {
 
   return (
     <>
-      {items.length === 0 ? <p>Nenhuma ideia postada ainda.</p> : <IdeaItems items={items} />}
+      {items.length === 0 ? (
+        <p>Nenhuma ideia postada ainda.</p>
+      ) : (
+        <ul>
+          {items.map((idea) => (
+            <li key={idea.id}>
+              <h3>{idea.title}</h3>
+              <p>
+                {COURSES[idea.course] ?? idea.course} · {CATEGORIES[idea.category] ?? idea.category} ·{" "}
+                {idea.slots} {idea.slots === 1 ? "vaga" : "vagas"}
+              </p>
+              <p>{idea.description}</p>
+              <p>
+                por {idea.author.name} em{" "}
+                <time dateTime={idea.created_at}>{dateFormat.format(new Date(idea.created_at))}</time>
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
       {!(await getMe()) && (
         <p>
           <span aria-hidden="true">🔒</span> <Link href="/login">Entre com Discord</Link> para ver o
@@ -37,27 +56,6 @@ async function IdeaList() {
         </p>
       )}
     </>
-  );
-}
-
-function IdeaItems({ items }: { items: Idea[] }) {
-  return (
-    <ul>
-      {items.map((idea) => (
-        <li key={idea.id}>
-          <h3>{idea.title}</h3>
-          <p>
-            {COURSES[idea.course] ?? idea.course} · {CATEGORIES[idea.category] ?? idea.category} ·{" "}
-            {idea.slots} {idea.slots === 1 ? "vaga" : "vagas"}
-          </p>
-          <p>{idea.description}</p>
-          <p>
-            por {idea.author.name} em{" "}
-            <time dateTime={idea.created_at}>{dateFormat.format(new Date(idea.created_at))}</time>
-          </p>
-        </li>
-      ))}
-    </ul>
   );
 }
 
