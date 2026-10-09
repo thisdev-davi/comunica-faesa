@@ -6,9 +6,9 @@ Este contrato é o acordo entre front e back. Os dois lados codam contra ele em 
 
 ## Fora desta fatia (de propósito)
 
-Login com Discord (ticket seguinte), habilidades, filtros, busca, paginação, comentários, "quero participar", troca de status.
+Login com Discord ([fatia 2](fatia-2-login.md)), habilidades, filtros, busca, paginação, comentários, "quero participar", troca de status.
 
-Enquanto não houver login, toda ideia é criada por um **usuário fixo de teste**. Ele vive **só no banco local**: é inserido por `backend/db/seed/dev.sql` (dados fictícios), nunca por migration. A API lê o id dele de `DEV_AUTHOR_ID`; sem essa variável, o `POST` responde `401` — nenhuma escrita sem autor.
+> **Atualizado pela [fatia 2](fatia-2-login.md):** o autor da ideia é o usuário da sessão. O usuário fixo (`DEV_AUTHOR_ID`) usado nesta fatia foi removido.
 
 ## Banco
 
@@ -116,7 +116,7 @@ Erros:
 ```
 
 - `400 Bad Request` — JSON malformado ou com tipo errado (ex.: `"slots": "3"`): `{ "error": "invalid_json" }`.
-- `401 Unauthorized` — sem autor (hoje: `DEV_AUTHOR_ID` não definido; depois do login: sem sessão): `{ "error": "unauthenticated" }`.
+- `401 Unauthorized` — sem sessão válida: `{ "error": "unauthenticated" }`.
 - `413 Content Too Large` — corpo acima de 64 KB: `{ "error": "body_too_large" }`.
 - `500 Internal Server Error` — `{ "error": "internal" }`, sem vazar detalhe interno.
 
