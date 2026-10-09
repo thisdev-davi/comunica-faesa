@@ -1,0 +1,13 @@
+# segredos
+.env
+.env.*
+!.env.example
+
+# front
+node_modules/
+.next/
+
+# back
+/backend/bin/
+*.test
+*.out
