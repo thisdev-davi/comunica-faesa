@@ -1,16 +1,20 @@
-import Image from "next/image";
-import Link from "next/link";
+import { Avatar } from "./components/Avatar";
+import styles from "./header.module.css";
+import { LoginLink } from "./login-link";
 import { LogoutButton } from "./logout-button";
 import { getMe } from "./me";
 
+// Devolve os itens soltos (fragment): eles entram direto na linha flex do cabeçalho.
 export async function UserMenu() {
   const me = await getMe();
-  if (!me) return <Link href="/login">Entrar</Link>;
+  if (!me) return <LoginLink />;
   return (
     <>
-      {/* alt vazio: o nome já aparece ao lado, a foto é decorativa para leitor de tela */}
-      {me.avatar_url && <Image src={me.avatar_url} alt="" width={32} height={32} />}
-      <span>{me.name}</span>
+      <Avatar name={me.name} src={me.avatar_url} />
+      {/* aria-hidden: o avatar já dá o nome ao leitor de tela */}
+      <span className={styles.name} aria-hidden="true">
+        {me.name}
+      </span>
       <LogoutButton />
     </>
   );

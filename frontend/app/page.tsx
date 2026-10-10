@@ -76,7 +76,7 @@ async function PostIdea() {
 
 export default function Home() {
   return (
-    <main className="provisional">
+    <main id="conteudo" className="provisional">
       <h1>Mural de ideias</h1>
       <h2>Postar ideia</h2>
       <Suspense fallback={<p>Carregando…</p>}>

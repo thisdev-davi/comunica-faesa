@@ -147,18 +147,3 @@ body {
 .provisional [aria-invalid="true"] {
   outline: 2px solid var(--danger);
 }
-
-header,
-header div {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-header {
-  justify-content: space-between;
-}
-
-header img {
-  border-radius: 50%;
-}

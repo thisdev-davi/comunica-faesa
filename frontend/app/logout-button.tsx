@@ -2,6 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Button } from "./components/Button";
+import { Notice } from "./components/Notice";
+import styles from "./header.module.css";
 
 export function LogoutButton() {
   const router = useRouter();
@@ -19,10 +22,11 @@ export function LogoutButton() {
 
   return (
     <>
-      <button type="button" onClick={logout}>
+      <Button variant="ghost" size="sm" icon="log-out" onClick={logout}>
         Sair
-      </button>
-      {failed && <span role="alert">Não foi possível sair. Tente de novo.</span>}
+      </Button>
+      {/* Ocupa uma linha inteira embaixo da barra do cabeçalho (flex-basis: 100%). */}
+      {failed && <Notice className={styles.alert}>Não foi possível sair. Tente de novo.</Notice>}
     </>
   );
 }
