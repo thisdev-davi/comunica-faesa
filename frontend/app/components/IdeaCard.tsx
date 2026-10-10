@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CATEGORIES, COURSES, type Idea } from "../ideas";
 import { Avatar } from "./Avatar";
+import { InterestButton } from "./InterestButton";
 import styles from "./IdeaCard.module.css";
 
 const STATUS: Record<string, { label: string; tone: string }> = {
@@ -23,13 +24,15 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-// Só o que a API devolve hoje: sem habilidades, sem @ do Discord e sem "Quero participar".
+// Só o que a API devolve hoje: sem habilidades e sem @ do Discord.
 // No mural, o título leva à página da ideia e a descrição corta em três linhas.
 // `full` é a própria página da ideia: título vira h1, descrição inteira e sem link (já estamos nela).
-export function IdeaCard({ idea, full = false }: { idea: Idea; full?: boolean }) {
+// `viewer` é o id de quem está logado (null = visitante): o "Quero participar" não aparece para visitante nem para o autor.
+export function IdeaCard({ idea, viewer, full = false }: { idea: Idea; viewer: number | null; full?: boolean }) {
   const Title = full ? "h1" : "h3";
+  const canJoin = viewer !== null && viewer !== idea.author.id;
   return (
-    <article className={`card ${styles.card} ${full ? styles.full : ""}`}>
+    <article className={[`card`, styles.card, full && styles.full, idea.interested && styles.interested].filter(Boolean).join(" ")}>
       <header className={styles.head}>
         <p className={styles.eyebrow}>
           {COURSES[idea.course] ?? idea.course} · {CATEGORIES[idea.category] ?? idea.category}
@@ -47,14 +50,18 @@ export function IdeaCard({ idea, full = false }: { idea: Idea; full?: boolean })
       </Title>
       <p className={full ? styles.desc : `${styles.desc} ${styles.clamp}`}>{idea.description}</p>
       <footer className={styles.foot}>
-        <Avatar name={idea.author.name} />
-        <div>
-          <p className={styles.author}>{idea.author.name}</p>
-          <p className={styles.meta}>
-            Precisa de {idea.slots} {idea.slots === 1 ? "pessoa" : "pessoas"} · postada em{" "}
-            <time dateTime={idea.created_at}>{dayMonth.format(new Date(idea.created_at))}</time>
-          </p>
+        <div className={styles.who}>
+          <Avatar name={idea.author.name} />
+          <div>
+            <p className={styles.author}>{idea.author.name}</p>
+            <p className={styles.meta}>
+              Precisa de {idea.slots} {idea.slots === 1 ? "pessoa" : "pessoas"} · {idea.interest_count}{" "}
+              {idea.interest_count === 1 ? "interessado" : "interessados"} · postada em{" "}
+              <time dateTime={idea.created_at}>{dayMonth.format(new Date(idea.created_at))}</time>
+            </p>
+          </div>
         </div>
+        {canJoin && <InterestButton ideaId={idea.id} interested={idea.interested} size={full ? "md" : "sm"} />}
       </footer>
     </article>
   );

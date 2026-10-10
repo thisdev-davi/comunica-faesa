@@ -19,7 +19,7 @@
   border-radius: var(--radius-md); /* o mesmo do .card: o anel de foco acompanha a borda */
 }
 
-.card:has(.link:hover) {
+.card:not(.interested):has(.link:hover) {
   border-color: var(--line-strong);
 }
 
@@ -90,14 +90,29 @@
   color: var(--ink);
 }
 
+/* Quem marcou "Quero participar" vê o card com a borda do destaque. */
+.interested {
+  border-color: var(--accent);
+}
+
+/* Autor à esquerda, botão à direita; em card estreito, o botão desce para a linha de baixo. */
 .foot {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
+  justify-content: space-between;
+  gap: var(--space-3);
   min-width: 0;
   padding-top: var(--space-4);
   margin-top: var(--space-1);
   border-top: 1px solid var(--line);
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
 }
 
 .author {
