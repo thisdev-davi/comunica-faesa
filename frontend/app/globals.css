@@ -1,12 +1,10 @@
-/* Tokens do design system Comunica FAESA (tokens.json do artefato), com os mesmos nomes.
+/* Tokens do design system Comunica FAESA (tokens.json do artefato), com os mesmos nomes; só os que o front usa.
    O tema segue o sistema do aluno: claro em :root, escuro no prefers-color-scheme. */
 :root {
   color-scheme: light; /* controles nativos (select, rolagem) seguem o tema */
 
-  --faesa-navy: #002060;
   --faesa-orange: #e2680e;
   --faesa-amber: #f79a16;
-  --faesa-graphite: #161f28;
 
   --surface: #f4f6fa;
   --surface-raised: #ffffff;
@@ -23,11 +21,6 @@
   --on-primary: #ffffff;
   --primary-soft: #e3eaf7;
 
-  --accent: #b8520a;
-  --accent-hover: #9e4508;
-  --on-accent: #ffffff;
-  --accent-soft: #fdebdd;
-
   --focus: #178ec8;
 
   --status-open: #0b6fa4;
@@ -40,7 +33,6 @@
   --danger-soft: #fdecea;
 
   --shadow-card: 0 1px 2px rgba(0, 32, 96, 0.06), 0 4px 12px rgba(0, 32, 96, 0.06);
-  --shadow-raised: 0 4px 8px rgba(0, 32, 96, 0.08), 0 12px 32px rgba(0, 32, 96, 0.12);
 
   /* --font-jakarta vem do next/font no layout; Gilroy só entra com licença */
   --font-sans: var(--font-jakarta), "Gilroy", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -79,11 +71,6 @@
     --on-primary: #0a1430;
     --primary-soft: #1a2a55;
 
-    --accent: #f79a16;
-    --accent-hover: #f9ac45;
-    --on-accent: #161f28;
-    --accent-soft: #3a2208;
-
     --focus: #f79a16;
 
     --status-open: #7cc4ee;
@@ -96,7 +83,6 @@
     --danger-soft: #3b1730;
 
     --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
-    --shadow-raised: 0 8px 24px rgba(0, 0, 0, 0.5);
   }
 }
 

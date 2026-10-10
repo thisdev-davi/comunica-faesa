@@ -11,7 +11,7 @@ function initials(name: string) {
 // Só o tamanho "sm" (28px): o único que o cabeçalho e o card usam. A foto vem do CDN do Discord.
 export function Avatar({ name, src }: { name: string; src?: string | null }) {
   return (
-    <span className={styles.avatar} title={name}>
+    <span className={styles.avatar}>
       {src ? (
         <Image src={src} alt={name} width={28} height={28} />
       ) : (

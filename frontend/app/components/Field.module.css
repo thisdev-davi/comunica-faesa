@@ -28,10 +28,6 @@
   resize: vertical;
 }
 
-.control::placeholder {
-  color: var(--ink-muted);
-}
-
 /* :focus (não só :focus-visible): campo mostra o anel também no clique. */
 .control:focus {
   outline: 2px solid var(--focus);
