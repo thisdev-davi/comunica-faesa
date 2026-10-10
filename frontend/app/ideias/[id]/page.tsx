@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Avatar } from "../../components/Avatar";
 import { IdeaCard } from "../../components/IdeaCard";
+import { InterestButton } from "../../components/InterestButton";
 import { StatePanel } from "../../components/StatePanel";
 import { API_URL, type Idea, type Interest } from "../../ideas";
 import { getMe } from "../../me";
@@ -37,7 +38,12 @@ async function IdeaDetail({ params }: { params: PageProps<"/ideias/[id]">["param
   }
   return (
     <>
-      <IdeaCard idea={idea} viewer={me.id} full />
+      <IdeaCard
+        idea={idea}
+        full
+        // Visitante nem chega aqui; o autor não participa da própria ideia (a API também recusa, 409).
+        action={me.id !== idea.author.id && <InterestButton ideaId={idea.id} interested={idea.interested} />}
+      />
       {idea.interested && <p className={styles.hint}>Você está na lista. O autor vai te chamar no Discord.</p>}
       {idea.interests && <Interested people={idea.interests} ideaTitle={idea.title} />}
     </>

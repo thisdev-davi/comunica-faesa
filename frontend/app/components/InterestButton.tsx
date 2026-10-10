@@ -8,7 +8,7 @@ import styles from "./InterestButton.module.css";
 // "Quero participar" alternável (docs/contratos/fatia-5-quero-participar.md). Sem aprovação: o clique já põe na lista.
 // Quem diz o estado é o servidor: depois de gravar, o router.refresh() redesenha card e página com o contador certo.
 // O refresh roda dentro da transição, então o botão fica desabilitado até o estado novo chegar (sem piscar o antigo).
-export function InterestButton({ ideaId, interested, size }: { ideaId: number; interested: boolean; size: "sm" | "md" }) {
+export function InterestButton({ ideaId, interested }: { ideaId: number; interested: boolean }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [failed, setFailed] = useState(false);
@@ -31,7 +31,7 @@ export function InterestButton({ ideaId, interested, size }: { ideaId: number; i
 
   return (
     <div className={styles.action}>
-      <Button variant={interested ? "secondary" : "accent"} size={size} aria-pressed={interested} disabled={pending} onClick={toggle}>
+      <Button variant={interested ? "secondary" : "accent"} aria-pressed={interested} disabled={pending} onClick={toggle}>
         {interested ? "Interessado" : "Quero participar"}
       </Button>
       {failed && (

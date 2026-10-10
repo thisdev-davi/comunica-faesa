@@ -39,7 +39,7 @@ async function IdeaList() {
         <ul className={styles.grid}>
           {items.map((idea) => (
             <li key={idea.id}>
-              <IdeaCard idea={idea} viewer={me?.id ?? null} />
+              <IdeaCard idea={idea} />
             </li>
           ))}
         </ul>

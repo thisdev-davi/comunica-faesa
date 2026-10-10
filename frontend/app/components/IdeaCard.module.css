@@ -35,6 +35,7 @@
 
 .head {
   display: flex;
+  flex-wrap: wrap; /* card estreito: os selos descem para baixo do curso */
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
@@ -90,9 +91,21 @@
   color: var(--ink);
 }
 
-/* Quem marcou "Quero participar" vê o card com a borda do destaque. */
+/* Quem marcou "Quero participar" vê o card com a borda do destaque e o selo "Você participa". */
 .interested {
   border-color: var(--accent);
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Selo accent do design system: fundo accent-soft com texto ink. */
+.joined {
+  background: var(--accent-soft);
+  color: var(--ink);
 }
 
 /* Autor à esquerda, botão à direita; em card estreito, o botão desce para a linha de baixo. */
