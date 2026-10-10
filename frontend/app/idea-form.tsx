@@ -66,7 +66,7 @@ export function IdeaForm() {
   const error = (name: string) => fields[name] && (FIX[name] ?? fields[name]);
 
   return (
-    <section className={styles.card} aria-labelledby="postar-ideia">
+    <section className={`card ${styles.card}`} aria-labelledby="postar-ideia">
       <h2 id="postar-ideia" className={styles.title}>
         Postar ideia
       </h2>

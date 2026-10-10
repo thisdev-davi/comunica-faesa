@@ -6,10 +6,6 @@
   gap: var(--space-3);
   padding: var(--space-7) var(--space-5);
   text-align: center;
-  background: var(--surface-raised);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-card);
 }
 
 .icon {

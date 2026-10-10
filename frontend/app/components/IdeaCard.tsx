@@ -26,7 +26,7 @@ function StatusBadge({ status }: { status: string }) {
 // A descrição aparece inteira: o corte em três linhas do design system espera a página da ideia, que ainda não existe.
 export function IdeaCard({ idea }: { idea: Idea }) {
   return (
-    <article className={styles.card}>
+    <article className={`card ${styles.card}`}>
       <header className={styles.head}>
         <p className={styles.eyebrow}>
           {COURSES[idea.course] ?? idea.course} · {CATEGORIES[idea.category] ?? idea.category}

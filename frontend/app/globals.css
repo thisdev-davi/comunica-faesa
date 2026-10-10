@@ -114,3 +114,17 @@ body {
   white-space: nowrap;
   border: 0;
 }
+
+/* Base de todo card (o .cf-card do design system); cada componente soma as próprias regras.
+   Na @layer: perde para qualquer regra fora de camada, então os módulos sobrescrevem
+   (raio do login, padding do StatePanel) sem depender da ordem em que o CSS carrega. */
+@layer base {
+  .card {
+    box-sizing: border-box;
+    padding: var(--space-5);
+    background: var(--surface-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+  }
+}

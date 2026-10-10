@@ -60,7 +60,7 @@ function Skeleton() {
         Carregando ideias…
       </li>
       {[0, 1, 2].map((k) => (
-        <li key={k} className={styles.skeleton} aria-hidden="true">
+        <li key={k} className={`card ${styles.skeleton}`} aria-hidden="true">
           <span style={{ width: "40%" }} />
           <span style={{ width: "80%", height: 18 }} />
           <span />

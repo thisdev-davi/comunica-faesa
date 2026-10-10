@@ -42,7 +42,7 @@ async function LoginBox({ searchParams }: Pick<PageProps<"/login">, "searchParam
 
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
-    <main id="conteudo" className={styles.card}>
+    <main id="conteudo" className={`card ${styles.card}`}>
       <Logo size={48} withName={false} />
       <h1 className={styles.title}>Entrar</h1>
       <p className={styles.lead}>Use sua conta do Discord, a mesma do servidor da comunidade.</p>

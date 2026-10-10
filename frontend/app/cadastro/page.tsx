@@ -16,7 +16,7 @@ async function Signup() {
 // Mesmo cartão do login: o cadastro é o passo seguinte a ele.
 export default function SignupPage() {
   return (
-    <main id="conteudo" className={styles.card}>
+    <main id="conteudo" className={`card ${styles.card}`}>
       <Logo size={48} withName={false} />
       <h1 className={styles.title}>Cadastro</h1>
       <p className={styles.lead}>Antes de entrar no mural, diga qual é o seu curso.</p>
