@@ -60,6 +60,57 @@ O login usa OAuth do Discord e só deixa entrar quem está no servidor da comuni
 
 O secret nunca vai para o repositório: ele vive só no `.env`.
 
+## Deploy na VPS
+
+Em https://comunica.5-183-8-106.sslip.io. A VPS é dividida com outros projetos: o Comunica tem compose e Postgres próprios (`compose.prod.yaml`, em `/opt/comunica-faesa`) e nenhuma porta aberta no host. O HTTPS vem do Caddy compartilhado em `/opt/proxy`, que manda `/api/*` para `comunica-api` e o resto para `comunica-web` pela rede Docker `proxy`. A cada subida, o serviço `migrate` roda o goose antes da API.
+
+Primeira vez:
+
+1. No Discord Developer Portal, adicione o redirect `https://comunica.5-183-8-106.sslip.io/api/auth/discord/callback` (o de localhost continua).
+2. Na VPS (`ssh root@5.183.8.106`):
+
+   ```sh
+   git clone https://github.com/thisdev-davi/comunica-faesa.git /opt/comunica-faesa
+   cd /opt/comunica-faesa
+   # .env só com estas chaves; a senha em hex porque vai dentro da URL do banco
+   cat > .env <<EOF
+   POSTGRES_PASSWORD=$(openssl rand -hex 24)
+   DISCORD_CLIENT_ID=
+   DISCORD_CLIENT_SECRET=
+   DISCORD_REDIRECT_URL=https://comunica.5-183-8-106.sslip.io/api/auth/discord/callback
+   DISCORD_GUILD_ID=
+   DISCORD_INVITE_URL=
+   EOF
+   chmod 600 .env && nano .env      # preencha as DISCORD_*
+   docker compose -f compose.prod.yaml up -d --build
+   ```
+
+3. No fim do `/opt/proxy/Caddyfile` (sem mexer nos outros blocos), depois de guardar uma cópia com `cp Caddyfile Caddyfile.antes-comunica`:
+
+   ```
+   # Comunica FAESA
+   comunica.5-183-8-106.sslip.io {
+   	encode gzip
+   	handle /api/* {
+   		reverse_proxy comunica-api:8090
+   	}
+   	handle {
+   		reverse_proxy comunica-web:3000
+   	}
+   }
+   ```
+
+   E recarregue: `cd /opt/proxy && docker compose exec caddy caddy reload -c /etc/caddy/Caddyfile`.
+
+Atualizar depois de um merge na `main`:
+
+```sh
+cd /opt/comunica-faesa && git pull && docker compose -f compose.prod.yaml up -d --build
+docker compose -f compose.prod.yaml logs --tail 50 comunica-api   # se algo não subir
+```
+
+O seed nunca roda na VPS: lá só entram dados reais, criados pelo próprio site.
+
 ## Estrutura
 
 ```
