@@ -61,6 +61,8 @@ func run() error {
 	mux.HandleFunc("POST /api/ideas", h.Create)
 	mux.HandleFunc("GET /api/ideas", h.List)
 	mux.HandleFunc("GET /api/ideas/{id}", h.Get)
+	mux.HandleFunc("PUT /api/ideas/{id}/interest", h.PutInterest)
+	mux.HandleFunc("DELETE /api/ideas/{id}/interest", h.DeleteInterest)
 
 	// ponytail: sem graceful shutdown; adicionar quando houver deploy.
 	srv := &http.Server{
