@@ -1,4 +1,4 @@
-import { useId, type SelectHTMLAttributes } from "react";
+import { useId, type ComponentProps } from "react";
 import styles from "./Field.module.css";
 
 // Select nativo com rótulo, dica e erro. O erro substitui a dica, pinta a borda e liga aria-invalid.
@@ -16,7 +16,7 @@ export function Select({
   error?: string;
   options: Record<string, string>;
   placeholder?: string;
-} & SelectHTMLAttributes<HTMLSelectElement>) {
+} & ComponentProps<"select">) {
   const id = useId();
   const text = error || hint;
   return (

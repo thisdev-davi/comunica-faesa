@@ -1,0 +1,45 @@
+/* Cartão do login das Telas do design system. O /cadastro usa o mesmo. */
+.card {
+  box-sizing: border-box;
+  width: calc(100% - 2 * var(--space-4));
+  max-width: 420px;
+  margin: var(--space-8) auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.title {
+  margin: 0;
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.lead {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+.wide {
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .card {
+    margin-block: var(--space-6);
+  }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}

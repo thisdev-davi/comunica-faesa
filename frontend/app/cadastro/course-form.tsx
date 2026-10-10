@@ -1,21 +1,31 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Button } from "../components/Button";
+import { Notice } from "../components/Notice";
+import { Select } from "../components/Select";
 import { COURSES, type ApiError } from "../ideas";
+import styles from "../login/login.module.css";
 
 export function CourseForm() {
   const router = useRouter();
-  const [error, setError] = useState("");
+  const select = useRef<HTMLSelectElement>(null);
+  const [invalid, setInvalid] = useState(false);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
+
+  // No envio com erro, o foco vai para o campo, que já diz o que fazer.
+  useEffect(() => {
+    if (invalid) select.current?.focus();
+  }, [invalid]);
 
   // Sem validação no navegador de propósito: o erro exibido é o do 400 da API.
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const course = new FormData(e.currentTarget).get("course");
     setSending(true);
-    setError("");
+    setInvalid(false);
     setMessage("");
     try {
       const res = await fetch("/api/me", {
@@ -28,38 +38,30 @@ export function CourseForm() {
         return;
       }
       const body: ApiError = await res.json();
-      setError(body.fields?.course ?? "");
-      setMessage(body.fields ? "Corrija o campo indicado." : `Erro da API: ${body.error}`);
+      setInvalid(Boolean(body.fields?.course));
+      setMessage(body.fields ? "Corrija o campo indicado." : "Não foi possível salvar o curso. Tente de novo.");
     } catch {
-      setMessage("Não foi possível falar com a API.");
+      setMessage("Não foi possível salvar o curso. Confira sua conexão e tente de novo.");
     } finally {
       setSending(false);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <label htmlFor="course">Curso</label>
-      <select
-        id="course"
+    <form onSubmit={handleSubmit} className={styles.form}>
+      {message && <Notice>{message}</Notice>}
+      <Select
+        ref={select}
         name="course"
+        label="Curso"
+        placeholder="Selecione…"
+        options={COURSES}
         defaultValue=""
-        aria-invalid={Boolean(error)}
-        aria-describedby={error ? "course-error" : undefined}
-      >
-        <option value="">Selecione…</option>
-        {Object.entries(COURSES).map(([value, label]) => (
-          <option key={value} value={value}>
-            {label}
-          </option>
-        ))}
-      </select>
-      {error && <p id="course-error">{error}</p>}
-
-      <button type="submit" disabled={sending}>
+        error={invalid ? "Escolha o curso." : undefined}
+      />
+      <Button type="submit" disabled={sending} className={styles.wide}>
         {sending ? "Salvando…" : "Continuar"}
-      </button>
-      <p role="status">{message}</p>
+      </Button>
     </form>
   );
 }

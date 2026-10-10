@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { Logo } from "../components/Logo";
+import styles from "../login/login.module.css";
 import { getMe } from "../me";
 import { CourseForm } from "./course-form";
 
@@ -11,12 +13,14 @@ async function Signup() {
   return <CourseForm />;
 }
 
+// Mesmo cartão do login: o cadastro é o passo seguinte a ele.
 export default function SignupPage() {
   return (
-    <main>
-      <h1>Cadastro</h1>
-      <p>Antes de entrar no mural, diga qual é o seu curso.</p>
-      <Suspense fallback={<p>Carregando…</p>}>
+    <main id="conteudo" className={styles.card}>
+      <Logo size={48} withName={false} />
+      <h1 className={styles.title}>Cadastro</h1>
+      <p className={styles.lead}>Antes de entrar no mural, diga qual é o seu curso.</p>
+      <Suspense fallback={<p className={styles.lead}>Carregando…</p>}>
         <Signup />
       </Suspense>
     </main>
