@@ -7,7 +7,9 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -40,7 +42,9 @@ func run() error {
 	}
 	port := cmp.Or(os.Getenv("PORT"), "8090")
 
-	ctx := context.Background()
+	// ctx é cancelado no Ctrl+C ou no SIGTERM do docker stop
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 	pool, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		return fmt.Errorf("configurar banco: %w", err)
@@ -61,12 +65,23 @@ func run() error {
 	mux.HandleFunc("POST /api/ideas", h.Create)
 	mux.HandleFunc("GET /api/ideas", h.List)
 
-	// ponytail: sem graceful shutdown; adicionar quando houver deploy.
 	srv := &http.Server{
 		Addr:              ":" + port,
 		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	slog.Info("api no ar", "addr", srv.Addr)
-	return srv.ListenAndServe()
+	errc := make(chan error, 1)
+	go func() { errc <- srv.ListenAndServe() }()
+	select {
+	case err := <-errc:
+		return err
+	case <-ctx.Done():
+	}
+
+	// Para de aceitar conexões e espera as requisições em andamento (até 5s; o docker stop mata em 10s).
+	slog.Info("api desligando")
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	return srv.Shutdown(shutdownCtx)
 }
