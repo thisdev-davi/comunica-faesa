@@ -11,9 +11,16 @@
 
 .hero {
   display: flex;
+  flex-wrap: wrap; /* no celular, o botão desce para baixo do texto */
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4) var(--space-6);
+}
+
+.intro {
+  display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  margin-bottom: var(--space-3);
 }
 
 .display {

@@ -1,6 +1,5 @@
-/* Formulário de postar ideia das Telas do design system, num card no topo do mural. */
+/* Formulário de postar ideia das Telas do design system, na página /ideias/nova. */
 .card {
-  max-width: 640px;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
@@ -8,8 +7,8 @@
 
 .title {
   margin: 0;
-  font-size: 18px;
-  line-height: 24px;
+  font-size: 24px; /* é o título da página */
+  line-height: 32px;
   font-weight: 700;
 }
 

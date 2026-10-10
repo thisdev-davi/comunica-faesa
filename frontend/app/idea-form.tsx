@@ -6,7 +6,7 @@ import { Button } from "./components/Button";
 import { Notice } from "./components/Notice";
 import { Select } from "./components/Select";
 import { TextField } from "./components/TextField";
-import { CATEGORIES, COURSES, type ApiError } from "./ideas";
+import { CATEGORIES, COURSES, type ApiError, type Idea } from "./ideas";
 import styles from "./idea-form.module.css";
 
 // O que fazer em cada campo que a API marcar no 400, no lugar do texto técnico dela.
@@ -22,7 +22,7 @@ export function IdeaForm() {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
-  const [message, setMessage] = useState<{ tone: "danger" | "success"; text: string } | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
 
   // No envio com erro, o foco vai para o primeiro campo inválido (roda depois que o aria-invalid chegou ao DOM).
@@ -45,33 +45,28 @@ export function IdeaForm() {
         body: JSON.stringify({ ...Object.fromEntries(data), slots: Number(data.get("slots")) }),
       });
       if (res.ok) {
-        form.reset();
-        setMessage({ tone: "success", text: "Ideia postada. Ela já aparece no mural." });
-        router.refresh(); // busca o mural de novo no servidor; a ideia nova aparece no topo
+        const idea: Idea = await res.json();
+        router.push(`/ideias/${idea.id}`); // o aluno vê a ideia como os outros vão ver; o formulário fica travado até a troca de página
         return;
       }
       const body: ApiError = await res.json();
       setFields(body.fields ?? {});
-      setMessage({
-        tone: "danger",
-        text: body.fields ? "Corrija os campos indicados." : "Não foi possível postar a ideia. Tente de novo.",
-      });
+      setMessage(body.fields ? "Corrija os campos indicados." : "Não foi possível postar a ideia. Tente de novo.");
     } catch {
-      setMessage({ tone: "danger", text: "Não foi possível postar a ideia. Confira sua conexão e tente de novo." });
-    } finally {
-      setSending(false);
+      setMessage("Não foi possível postar a ideia. Confira sua conexão e tente de novo.");
     }
+    setSending(false);
   }
 
   const error = (name: string) => fields[name] && (FIX[name] ?? fields[name]);
 
   return (
     <section className={`card ${styles.card}`} aria-labelledby="postar-ideia">
-      <h2 id="postar-ideia" className={styles.title}>
+      <h1 id="postar-ideia" className={styles.title}>
         Postar ideia
-      </h2>
+      </h1>
       <p className={styles.lead}>Conte o problema e o que você quer construir.</p>
-      {message && <Notice tone={message.tone}>{message.text}</Notice>}
+      {message && <Notice tone="danger">{message}</Notice>}
       <form ref={formRef} onSubmit={handleSubmit}>
         {/* fieldset disabled trava todos os campos e o botão durante o envio */}
         <fieldset disabled={sending} className={styles.fields}>
@@ -103,7 +98,7 @@ export function IdeaForm() {
             error={error("slots")}
           />
           <div className={styles.actions}>
-            <Button type="submit" icon={sending ? undefined : "plus"}>
+            <Button type="submit" icon={sending ? undefined : "lightbulb"}>
               {sending ? "Enviando…" : "Postar ideia"}
             </Button>
           </div>
