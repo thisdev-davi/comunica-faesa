@@ -1,0 +1,111 @@
+/* Regras do .cf-card, .cf-idea e do StatusBadge (.cf-badge) do bundle.css do design system. */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  box-sizing: border-box;
+  padding: var(--space-5);
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.title {
+  margin: 0;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.desc {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line; /* respeita as quebras de linha que o autor digitou */
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--ink-muted);
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  padding-top: var(--space-4);
+  margin-top: var(--space-1);
+  border-top: 1px solid var(--line);
+}
+
+.author {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.meta {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--ink-muted);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* O losango da identidade antes do texto. */
+.mark {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  background: currentColor;
+  transform: rotate(45deg);
+}
+
+.open {
+  background: var(--status-open-soft);
+  color: var(--status-open);
+}
+
+.progress {
+  background: var(--status-progress-soft);
+  color: var(--status-progress);
+}
+
+.done {
+  background: var(--status-done-soft);
+  color: var(--status-done);
+}

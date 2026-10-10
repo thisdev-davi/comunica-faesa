@@ -2,6 +2,7 @@
 // e a marca do Discord (simple-icons 13.0.0), que só aparece no botão "Entrar com Discord".
 const LUCIDE = {
   "log-in": ["M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4", "M10 17l5-5-5-5", "M15 12H3"],
+  plus: ["M5 12h14", "M12 5v14"],
   "log-out": ["M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4", "M16 17l5-5-5-5", "M21 12H9"],
   "circle-alert": ["M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0z", "M12 8v4", "M12 16h.01"],
   "circle-check": ["M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0z", "m9 12 2 2 4-4"],
