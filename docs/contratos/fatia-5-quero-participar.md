@@ -75,9 +75,10 @@ Ganha `interest_count` e `interested`, como no mural. Quando quem chama é o **a
 
 ## Front
 
-- Botão "Quero participar" (`accent`) no card do mural e na página da ideia. Depois do clique, vira "Interessado" (`secondary`, `aria-pressed="true"`) e o card ganha borda `accent`; clicar de novo desiste. Não aparece para visitante nem para o autor.
+- O card do mural **não tem ação**: para participar, o aluno abre a ideia (o card inteiro leva à página da [fatia 4](fatia-4-pagina-da-ideia.md)). No card, quem já está na ideia vê o selo "Você participa" ao lado do status e a borda `accent`.
+- Botão "Quero participar" (`accent`) só na página da ideia. Depois do clique, vira "Interessado" (`secondary`, `aria-pressed="true"`); clicar de novo desiste. Não aparece para visitante nem para o autor.
 - Depois de marcar ou desmarcar, o front pede a página de novo ao servidor (`router.refresh()`), que traz o contador e o estado atualizados. Sessão expirada (`401`) vai para `/login`.
-- Card e página mostram "N interessados" junto das vagas.
+- Card e página mostram "Precisa de N pessoas · M interessados" numa linha e "postada em DD/MM" na de baixo.
 - Página da ideia, para quem é interessado: "Você está na lista. O autor vai te chamar no Discord."
 - Página da ideia, para o autor: seção "Interessados (N)", com foto, nome e o link "Chamar no Discord" de cada pessoa. Sem interessados: "Ninguém se interessou ainda."
 - "Chamar no Discord" abre `https://discord.com/users/<discord_id>` numa nova aba e, no mesmo clique, copia a mensagem `Oi, <primeiro nome>! Vi que você quer participar da ideia “<título>” no Comunica FAESA. Bora conversar?`, com o aviso "Mensagem copiada, cole na conversa." O Discord não tem link que abra uma conversa já escrita; o perfil é o mais perto disso. Se a cópia falhar, o perfil abre do mesmo jeito.
@@ -85,7 +86,8 @@ Ganha `interest_count` e `interested`, como no mural. Quando quem chama é o **a
 ## Pronto quando
 
 - [ ] `goose up` cria `interests`.
-- [ ] Clicar em "Quero participar" põe o aluno na lista; clicar de novo tira.
+- [ ] Na página da ideia, "Quero participar" põe o aluno na lista; clicar de novo tira.
+- [ ] No mural, o card de quem participa mostra "Você participa"; o card não tem botão.
 - [ ] O autor não vê o botão na própria ideia, e a API responde `409`.
 - [ ] O autor vê a lista na página da ideia e o link abre o perfil no Discord com a mensagem copiada.
 - [ ] Quem não é autor vê só o número de interessados.
