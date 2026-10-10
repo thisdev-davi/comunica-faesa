@@ -4,6 +4,8 @@ Objetivo único: o aluno logado abre uma ideia do mural e vê todos os detalhes 
 
 Mudou o contrato? Atualiza este arquivo **antes** do código.
 
+> **Atualizado pela [fatia 5](fatia-5-quero-participar.md):** a resposta ganha `interest_count`, `interested` e, só para o autor, `interests`.
+
 ## Fora desta fatia (de propósito)
 
 "Quero participar" e lista de interessados (fatia 5), comentários, foto do autor, habilidades, editar ou apagar a ideia, troca de status.
