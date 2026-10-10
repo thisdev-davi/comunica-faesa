@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -24,6 +25,16 @@ func do(t *testing.T, hf http.HandlerFunc, method, body string) *httptest.Respon
 	t.Helper()
 	rec := httptest.NewRecorder()
 	hf(rec, httptest.NewRequest(method, "/api/ideas", strings.NewReader(body)))
+	return rec
+}
+
+// getOne chama o Get com o {id} preenchido, como o roteador faria.
+func getOne(t *testing.T, h *Handler, id string) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodGet, "/api/ideas/"+id, nil)
+	req.SetPathValue("id", id)
+	rec := httptest.NewRecorder()
+	h.Get(rec, req)
 	return rec
 }
 
@@ -88,6 +99,33 @@ func TestSessionErrorIs500(t *testing.T) {
 			t.Errorf("%s: status = %d (%s), quer 500 internal", method, rec.Code, rec.Body)
 		}
 	}
+	if rec := getOne(t, h, "1"); rec.Code != 500 || decode[errorResponse](t, rec).Error != "internal" {
+		t.Errorf("GET uma: status = %d (%s), quer 500 internal", rec.Code, rec.Body)
+	}
+}
+
+// Esses casos param antes do banco, então o handler roda sem conexão (nil).
+func TestGetRejectsVisitorAndBadID(t *testing.T) {
+	cases := []struct {
+		name       string
+		userID     int64
+		id         string
+		wantStatus int
+		wantError  string
+	}{
+		{"visitante", 0, "1", 401, "unauthenticated"},
+		{"id não numérico", 1, "abc", 404, "not_found"},
+		{"id zero", 1, "0", 404, "not_found"},
+		{"id negativo", 1, "-1", 404, "not_found"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := getOne(t, NewHandler(nil, loggedAs(tc.userID)), tc.id)
+			if rec.Code != tc.wantStatus || decode[errorResponse](t, rec).Error != tc.wantError {
+				t.Errorf("status = %d (%s), quer %d %s", rec.Code, rec.Body, tc.wantStatus, tc.wantError)
+			}
+		})
+	}
 }
 
 func TestValidateCountsCharactersNotBytes(t *testing.T) {
@@ -104,7 +142,7 @@ func TestValidateCountsCharactersNotBytes(t *testing.T) {
 }
 
 // Caminho feliz contra Postgres real. Precisa de TEST_DATABASE_URL apontando para um banco já migrado.
-func TestCreateAndList(t *testing.T) {
+func TestCreateListAndGet(t *testing.T) {
 	url := os.Getenv("TEST_DATABASE_URL")
 	if url == "" {
 		t.Skip("TEST_DATABASE_URL não definida")
@@ -166,6 +204,15 @@ func TestCreateAndList(t *testing.T) {
 		if preview[i].ID != all[i].ID {
 			t.Errorf("prévia não são as mais recentes: %+v", preview)
 		}
+	}
+
+	// A página da ideia devolve o mesmo objeto do mural; id que não existe é 404.
+	rec = getOne(t, h, strconv.FormatInt(first.ID, 10))
+	if got := decode[ideaResponse](t, rec); rec.Code != 200 || got != first {
+		t.Errorf("GET da primeira: %d %+v, quer 200 %+v", rec.Code, got, first)
+	}
+	if rec = getOne(t, h, "999999"); rec.Code != 404 || decode[errorResponse](t, rec).Error != "not_found" {
+		t.Errorf("GET inexistente: %d (%s), quer 404 not_found", rec.Code, rec.Body)
 	}
 }
 
