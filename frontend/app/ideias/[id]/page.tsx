@@ -2,10 +2,12 @@ import { cookies } from "next/headers";
 import { notFound, redirect, unstable_rethrow } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
+import { Avatar } from "../../components/Avatar";
 import { IdeaCard } from "../../components/IdeaCard";
 import { StatePanel } from "../../components/StatePanel";
-import { API_URL, type Idea } from "../../ideas";
+import { API_URL, type Idea, type Interest } from "../../ideas";
 import { getMe } from "../../me";
+import { CallOnDiscord } from "./call-on-discord";
 import styles from "./ideia.module.css";
 
 // Contrato da fatia 4 (docs/contratos/fatia-4-pagina-da-ideia.md): só para quem está logado e já tem curso.
@@ -33,7 +35,38 @@ async function IdeaDetail({ params }: { params: PageProps<"/ideias/[id]">["param
       </StatePanel>
     );
   }
-  return <IdeaCard idea={idea} full />;
+  return (
+    <>
+      <IdeaCard idea={idea} viewer={me.id} full />
+      {idea.interested && <p className={styles.hint}>Você está na lista. O autor vai te chamar no Discord.</p>}
+      {idea.interests && <Interested people={idea.interests} ideaTitle={idea.title} />}
+    </>
+  );
+}
+
+// Só o autor recebe a lista da API (fatia 5): quem marcou "Quero participar", em ordem de chegada.
+function Interested({ people, ideaTitle }: { people: Interest[]; ideaTitle: string }) {
+  return (
+    <section className={`card ${styles.people}`} aria-labelledby="interessados">
+      <h2 id="interessados" className={styles.section}>
+        Interessados ({people.length})
+      </h2>
+      {people.length === 0 ? (
+        <p className={styles.empty}>Ninguém se interessou ainda. Quando alguém clicar em “Quero participar”, aparece aqui.</p>
+      ) : (
+        <ul className={styles.list}>
+          {people.map((p) => (
+            <li key={p.id} className={styles.person}>
+              <Avatar name={p.name} src={p.avatar_url} />
+              <span className={styles.name}>{p.name}</span>
+              {/* Sem discord_id só os usuários fictícios do seed local: não há perfil para abrir. */}
+              {p.discord_id && <CallOnDiscord discordId={p.discord_id} name={p.name} ideaTitle={ideaTitle} />}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
 }
 
 // O id da URL só existe na requisição: o que depende dele espera dentro do Suspense, e o resto sai no shell estático.
