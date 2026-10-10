@@ -1,22 +1,151 @@
-/* Provisório: só o suficiente para ler a tela de teste. A identidade visual vem depois. */
+/* Tokens do design system Comunica FAESA (tokens.json do artefato), com os mesmos nomes.
+   O tema segue o sistema do aluno: claro em :root, escuro no prefers-color-scheme. */
+:root {
+  color-scheme: light; /* controles nativos (select, rolagem) seguem o tema */
+
+  --faesa-navy: #002060;
+  --faesa-orange: #e2680e;
+  --faesa-amber: #f79a16;
+  --faesa-graphite: #161f28;
+
+  --surface: #f4f6fa;
+  --surface-raised: #ffffff;
+  --surface-sunken: #e9edf4;
+  --field: var(--surface-raised);
+  --line: #d5dce7;
+  --line-strong: #7b8698;
+
+  --ink: #161f28;
+  --ink-muted: #5b6574;
+
+  --primary: #002060;
+  --primary-hover: #00164a;
+  --on-primary: #ffffff;
+  --primary-soft: #e3eaf7;
+
+  --accent: #b8520a;
+  --accent-hover: #9e4508;
+  --on-accent: #ffffff;
+  --accent-soft: #fdebdd;
+
+  --focus: #178ec8;
+
+  --status-open: #0b6fa4;
+  --status-open-soft: #e1f1fa;
+  --status-progress: #8a4b00;
+  --status-progress-soft: #fff1dc;
+  --status-done: #1e7a46;
+  --status-done-soft: #e3f4ea;
+  --danger: #b42318;
+  --danger-soft: #fdecea;
+
+  --shadow-card: 0 1px 2px rgba(0, 32, 96, 0.06), 0 4px 12px rgba(0, 32, 96, 0.06);
+  --shadow-raised: 0 4px 8px rgba(0, 32, 96, 0.08), 0 12px 32px rgba(0, 32, 96, 0.12);
+
+  /* --font-jakarta vem do next/font no layout; Gilroy só entra com licença */
+  --font-sans: var(--font-jakarta), "Gilroy", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-full: 999px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --surface: #0a1430;
+    --surface-raised: #111d3f;
+    --surface-sunken: #07102a;
+    --field: var(--surface);
+    --line: #22305a;
+    --line-strong: #6a7aa0;
+
+    --ink: #eef2f8;
+    --ink-muted: #a9b4c8;
+
+    --primary: #8fb0f0;
+    --primary-hover: #a9c2f4;
+    --on-primary: #0a1430;
+    --primary-soft: #1a2a55;
+
+    --accent: #f79a16;
+    --accent-hover: #f9ac45;
+    --on-accent: #161f28;
+    --accent-soft: #3a2208;
+
+    --focus: #f79a16;
+
+    --status-open: #7cc4ee;
+    --status-open-soft: #0e2a44;
+    --status-progress: #f7b85a;
+    --status-progress-soft: #3a2608;
+    --status-done: #7dd3a0;
+    --status-done-soft: #0f3221;
+    --danger: #ff8f8f;
+    --danger-soft: #3b1730;
+
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-raised: 0 8px 24px rgba(0, 0, 0, 0.5);
+  }
+}
+
 body {
-  font-family: system-ui, sans-serif;
-  line-height: 1.5;
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 22px;
+  background: var(--surface);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Foco de teclado em todo elemento clicável; campos trocam pelo próprio anel. */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Some da tela e continua para o leitor de tela. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Provisório: o mural ganha o design system no próximo PR. */
+.provisional {
   max-width: 40rem;
   margin: 2rem auto;
   padding: 0 1rem;
 }
 
-label,
-input,
-textarea,
-select {
+.provisional label,
+.provisional input,
+.provisional textarea,
+.provisional select {
   display: block;
   width: 100%;
 }
 
-[aria-invalid="true"] {
-  outline: 2px solid crimson;
+.provisional [aria-invalid="true"] {
+  outline: 2px solid var(--danger);
 }
 
 header,
