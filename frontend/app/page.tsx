@@ -2,15 +2,14 @@ import { cookies } from "next/headers";
 import { redirect, unstable_rethrow } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
+import { IdeaCard } from "./components/IdeaCard";
+import { StatePanel } from "./components/StatePanel";
 import { IdeaForm } from "./idea-form";
-import { API_URL, CATEGORIES, COURSES, type Idea } from "./ideas";
+import { API_URL, type Idea } from "./ideas";
 import { getMe } from "./me";
+import styles from "./mural.module.css";
 
-const dateFormat = new Intl.DateTimeFormat("pt-BR", {
-  dateStyle: "short",
-  timeStyle: "short",
-  timeZone: "America/Sao_Paulo",
-});
+const ABOUT = "Ideias de projeto postadas por alunos de TI da FAESA.";
 
 // Roda no servidor e chama o Go direto (sem passar pelo rewrite). Sem cache: o mural é sempre fresco.
 // Repassa o cookie do navegador: sem ele a API trata todo mundo como visitante e corta o mural em 3 ideias.
@@ -24,38 +23,62 @@ async function IdeaList() {
   } catch (err) {
     unstable_rethrow(err); // deixa passar os erros internos do Next (ex.: fim da pré-renderização)
     console.error("listar ideias:", err);
-    return <p role="alert">Não foi possível carregar o mural. A API está no ar?</p>;
+    return (
+      <StatePanel tone="error" title="Não foi possível carregar o mural">
+        Pode ser uma instabilidade rápida. Atualize a página em alguns instantes.
+      </StatePanel>
+    );
   }
 
   return (
     <>
       {items.length === 0 ? (
-        <p>Nenhuma ideia postada ainda.</p>
+        <StatePanel title="Nenhuma ideia ainda">Que tal postar a primeira? Conte o problema e quem você procura.</StatePanel>
       ) : (
-        <ul>
+        <ul className={styles.grid}>
           {items.map((idea) => (
             <li key={idea.id}>
-              <h3>{idea.title}</h3>
-              <p>
-                {COURSES[idea.course] ?? idea.course} · {CATEGORIES[idea.category] ?? idea.category} ·{" "}
-                {idea.slots} {idea.slots === 1 ? "vaga" : "vagas"}
-              </p>
-              <p>{idea.description}</p>
-              <p>
-                por {idea.author.name} em{" "}
-                <time dateTime={idea.created_at}>{dateFormat.format(new Date(idea.created_at))}</time>
-              </p>
+              <IdeaCard idea={idea} />
             </li>
           ))}
         </ul>
       )}
       {!(await getMe()) && (
-        <p>
-          <span aria-hidden="true">🔒</span> <Link href="/login">Entre com Discord</Link> para ver o
-          mural todo.
+        <p className={styles.more}>
+          <Link href="/login">Entre com Discord</Link> para ver o mural todo.
         </p>
       )}
     </>
+  );
+}
+
+// Cards vazios no lugar da lista enquanto a API responde; o leitor de tela ouve só o "Carregando ideias…".
+function Skeleton() {
+  return (
+    <ul className={styles.grid} aria-busy="true">
+      <li className="sr-only" role="status">
+        Carregando ideias…
+      </li>
+      {[0, 1, 2].map((k) => (
+        <li key={k} className={styles.skeleton} aria-hidden="true">
+          <span style={{ width: "40%" }} />
+          <span style={{ width: "80%", height: 18 }} />
+          <span />
+          <span style={{ width: "90%" }} />
+          <span style={{ width: "60%" }} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// Visitante ganha o convite para entrar; o "Entrar" do cabeçalho também leva ao login.
+async function Lead() {
+  if (await getMe()) return <p className={styles.lead}>{ABOUT}</p>;
+  return (
+    <p className={styles.lead}>
+      {ABOUT} <Link href="/login">Entre com o Discord</Link> para ver o mural todo e postar a sua.
+    </p>
   );
 }
 
@@ -64,26 +87,23 @@ async function IdeaList() {
 async function PostIdea() {
   const me = await getMe();
   if (me && !me.course) redirect("/cadastro");
-  if (!me) {
-    return (
-      <p>
-        <Link href="/login">Entre com Discord</Link> para postar uma ideia.
-      </p>
-    );
-  }
-  return <IdeaForm />;
+  return me && <IdeaForm />;
 }
 
 export default function Home() {
   return (
-    <main id="conteudo" className="provisional">
-      <h1>Mural de ideias</h1>
-      <h2>Postar ideia</h2>
-      <Suspense fallback={<p>Carregando…</p>}>
+    <main id="conteudo" className={styles.page}>
+      <div className={styles.hero}>
+        <h1 className={styles.display}>Mural de ideias</h1>
+        <Suspense fallback={<p className={styles.lead}>{ABOUT}</p>}>
+          <Lead />
+        </Suspense>
+      </div>
+      <Suspense fallback={null}>
         <PostIdea />
       </Suspense>
-      <h2>Ideias</h2>
-      <Suspense fallback={<p>Carregando…</p>}>
+      <h2 className="sr-only">Ideias</h2>
+      <Suspense fallback={<Skeleton />}>
         <IdeaList />
       </Suspense>
     </main>

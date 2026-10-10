@@ -114,22 +114,3 @@ body {
   white-space: nowrap;
   border: 0;
 }
-
-/* Provisório: o mural ganha o design system no próximo PR. */
-.provisional {
-  max-width: 40rem;
-  margin: 2rem auto;
-  padding: 0 1rem;
-}
-
-.provisional label,
-.provisional input,
-.provisional textarea,
-.provisional select {
-  display: block;
-  width: 100%;
-}
-
-.provisional [aria-invalid="true"] {
-  outline: 2px solid var(--danger);
-}

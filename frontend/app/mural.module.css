@@ -1,0 +1,93 @@
+/* Mural das Telas do design system: página, topo, grade de cards e esqueleto do carregando. */
+.page {
+  box-sizing: border-box;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-6) var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.display {
+  margin: 0;
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.lead {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--ink-muted);
+}
+
+.lead a,
+.more a {
+  color: var(--primary);
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-6);
+  align-items: start;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.more {
+  margin: 0;
+  text-align: center;
+  color: var(--ink-muted);
+}
+
+.skeleton {
+  height: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  box-sizing: border-box;
+  padding: var(--space-5);
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+}
+
+.skeleton span {
+  display: block;
+  height: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding: var(--space-6) var(--space-4) var(--space-7);
+    gap: var(--space-5);
+  }
+
+  .display {
+    font-size: 28px;
+    line-height: 36px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+}
