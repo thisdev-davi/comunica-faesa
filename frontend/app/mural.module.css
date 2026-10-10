@@ -21,8 +21,7 @@
   font-size: 32px;
   line-height: 40px;
   font-weight: 800;
-  letter-spacing: 0.01em;
-  text-transform: uppercase;
+  letter-spacing: -0.01em; /* em caixa normal, o título grande fica melhor levemente apertado */
   color: var(--ink);
 }
 
