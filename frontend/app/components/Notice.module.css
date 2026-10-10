@@ -1,0 +1,45 @@
+/* Regras do .cf-notice do bundle.css do design system.
+   Borda transparente: some no tema e aparece no modo de alto contraste do sistema. */
+.notice {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--ink);
+}
+
+.danger {
+  background: var(--danger-soft);
+}
+
+.success {
+  background: var(--status-done-soft);
+}
+
+.icon {
+  flex: none;
+  margin-top: 1px;
+}
+
+.danger .icon {
+  color: var(--danger);
+}
+
+.success .icon {
+  color: var(--status-done);
+}
+
+.text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.text a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

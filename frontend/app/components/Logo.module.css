@@ -1,0 +1,23 @@
+/* Regras do .cf-logo do bundle.css do design system. */
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--primary);
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.a {
+  fill: var(--primary);
+}
+
+.b {
+  fill: var(--faesa-orange);
+}
+
+.x {
+  fill: var(--faesa-amber);
+}

@@ -1,0 +1,55 @@
+/* Regras do .cf-field do bundle.css do design system: Select e campos de texto. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0; /* um select com opção longa não estoura a grade */
+}
+
+.label {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.control {
+  font: inherit;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--ink);
+  background: var(--field);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: 9px var(--space-3);
+  min-height: 40px;
+  box-sizing: border-box;
+  width: 100%;
+  resize: vertical;
+}
+
+.control::placeholder {
+  color: var(--ink-muted);
+}
+
+/* :focus (não só :focus-visible): campo mostra o anel também no clique. */
+.control:focus {
+  outline: 2px solid var(--focus);
+  outline-offset: 0;
+  border-color: var(--focus);
+}
+
+.hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--ink-muted);
+}
+
+.invalid .control {
+  border-color: var(--danger);
+}
+
+.invalid .hint {
+  color: var(--danger);
+}

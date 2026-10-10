@@ -1,0 +1,87 @@
+/* Regras do .cf-btn do bundle.css do design system. */
+.btn {
+  box-sizing: border-box;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.md {
+  height: 40px;
+  padding: 0 var(--space-5);
+  font-size: 13px;
+  line-height: 16px;
+}
+
+.sm {
+  height: 32px;
+  padding: 0 var(--space-3);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.primary {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.primary:hover {
+  background: var(--primary-hover);
+}
+
+.secondary {
+  background: var(--surface-raised);
+  color: var(--primary);
+  border-color: var(--line-strong);
+}
+
+.secondary:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--primary);
+}
+
+.ghost:hover {
+  background: var(--primary-soft);
+}
+
+/* Depois dos :hover, para ganhar deles com a mesma especificidade. */
+.btn:disabled {
+  cursor: not-allowed;
+  background: var(--surface-sunken);
+  color: var(--ink-muted);
+  border-color: transparent;
+}
+
+.icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+}
+
+/* Telas de toque: alvo mínimo de 44px. */
+@media (pointer: coarse) {
+  .sm {
+    height: 44px;
+  }
+}
