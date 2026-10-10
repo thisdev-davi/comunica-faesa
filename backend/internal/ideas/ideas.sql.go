@@ -45,7 +45,7 @@ type CreateIdeaRow struct {
 	AuthorName  string
 }
 
-// Create e List devolvem as mesmas colunas, na mesma ordem: assim as structs geradas são conversíveis entre si.
+// Create, List e Get devolvem as mesmas colunas, na mesma ordem: assim as structs geradas são conversíveis entre si.
 func (q *Queries) CreateIdea(ctx context.Context, arg CreateIdeaParams) (CreateIdeaRow, error) {
 	row := q.db.QueryRow(ctx, createIdea,
 		arg.AuthorID,
@@ -56,6 +56,45 @@ func (q *Queries) CreateIdea(ctx context.Context, arg CreateIdeaParams) (CreateI
 		arg.Slots,
 	)
 	var i CreateIdeaRow
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.Course,
+		&i.Category,
+		&i.Slots,
+		&i.Status,
+		&i.CreatedAt,
+		&i.AuthorID,
+		&i.AuthorName,
+	)
+	return i, err
+}
+
+const getIdea = `-- name: GetIdea :one
+SELECT i.id, i.title, i.description, i.course, i.category, i.slots, i.status, i.created_at,
+       u.id AS author_id, u.name AS author_name
+FROM ideas i
+JOIN users u ON u.id = i.author_id
+WHERE i.id = $1
+`
+
+type GetIdeaRow struct {
+	ID          int64
+	Title       string
+	Description string
+	Course      string
+	Category    string
+	Slots       int32
+	Status      string
+	CreatedAt   time.Time
+	AuthorID    int64
+	AuthorName  string
+}
+
+func (q *Queries) GetIdea(ctx context.Context, id int64) (GetIdeaRow, error) {
+	row := q.db.QueryRow(ctx, getIdea, id)
+	var i GetIdeaRow
 	err := row.Scan(
 		&i.ID,
 		&i.Title,
