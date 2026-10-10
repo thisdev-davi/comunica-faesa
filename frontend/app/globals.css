@@ -20,6 +20,9 @@
   --primary-hover: #00164a;
   --on-primary: #ffffff;
   --primary-soft: #e3eaf7;
+  --accent: #b8520a; /* laranja escurecido: 4.9:1 com texto branco */
+  --accent-hover: #9e4508;
+  --on-accent: #ffffff;
 
   --focus: #178ec8;
 
@@ -70,6 +73,9 @@
     --primary-hover: #a9c2f4;
     --on-primary: #0a1430;
     --primary-soft: #1a2a55;
+    --accent: #f79a16;
+    --accent-hover: #f9ac45;
+    --on-accent: #161f28;
 
     --focus: #f79a16;
 

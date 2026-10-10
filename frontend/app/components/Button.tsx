@@ -1,11 +1,10 @@
 import Link from "next/link";
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from "react";
 import { Icon, type IconName } from "./Icon";
 import styles from "./Button.module.css";
 
-// Sem "accent": o único uso dele no design system é o "Quero participar", que ainda não existe.
 type Look = {
-  variant?: "primary" | "secondary" | "ghost";
+  variant?: "primary" | "accent" | "secondary" | "ghost";
   size?: "md" | "sm";
   icon?: IconName;
   className?: string;
@@ -39,16 +38,25 @@ export function Button({ variant, size, icon, className, children, ...rest }: Lo
 }
 
 // Link com cara de botão: navega, não age. `reload` troca o <Link> por <a> para rotas da API
-// que respondem com redirect (o Next não pode tratá-las como navegação dentro do app).
-export function ButtonLink(props: Look & { href: string; reload?: boolean }) {
-  const { href, reload, icon, children } = props;
+// que respondem com redirect e para sites de fora (o Next não pode tratá-los como navegação dentro do app).
+export function ButtonLink({
+  href,
+  reload,
+  variant,
+  size,
+  icon,
+  className,
+  children,
+  ...rest
+}: Look & { href: string; reload?: boolean } & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href" | "className">) {
   const content = <Content icon={icon}>{children}</Content>;
+  const cls = classes({ variant, size, className });
   return reload ? (
-    <a href={href} className={classes(props)}>
+    <a href={href} {...rest} className={cls}>
       {content}
     </a>
   ) : (
-    <Link href={href} className={classes(props)}>
+    <Link href={href} {...rest} className={cls}>
       {content}
     </Link>
   );
