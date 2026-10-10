@@ -25,6 +25,18 @@
   text-decoration: none;
 }
 
+/* Botão só de ícone (tema): quadrado, do tamanho da altura do botão sm. */
+.iconOnly {
+  width: 32px;
+  padding: 0;
+}
+
+@media (pointer: coarse) {
+  .iconOnly {
+    width: 44px;
+  }
+}
+
 .name {
   font-size: 13px;
   font-weight: 600;

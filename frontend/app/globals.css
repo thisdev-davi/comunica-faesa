@@ -1,46 +1,42 @@
 /* Tokens do design system Comunica FAESA (tokens.json do artefato), com os mesmos nomes; só os que o front usa.
-   O tema segue o sistema do aluno: claro em :root, escuro no prefers-color-scheme. */
+   Cada cor tem as duas versões em light-dark(claro, escuro): vale a do color-scheme da página.
+   Sem escolha salva, o color-scheme segue o sistema do aluno ("light dark"); o toggle do cabeçalho grava
+   data-theme no <html> (o script do layout aplica antes da pintura), que fixa claro ou escuro. */
 :root {
-  color-scheme: light; /* controles nativos (select, rolagem) seguem o tema */
-
+  color-scheme: light dark; /* também guia os controles nativos (select, rolagem) */
   --faesa-orange: #e2680e;
   --faesa-amber: #f79a16;
-
-  --surface: #f4f6fa;
-  --surface-raised: #ffffff;
-  --surface-sunken: #e9edf4;
-  --field: var(--surface-raised);
-  --line: #d5dce7;
-  --line-strong: #7b8698;
-
-  --ink: #161f28;
-  --ink-muted: #5b6574;
-
-  --primary: #002060;
-  --primary-hover: #00164a;
-  --on-primary: #ffffff;
-  --primary-soft: #e3eaf7;
-  --accent: #b8520a; /* laranja escurecido: 4.9:1 com texto branco */
-  --accent-hover: #9e4508;
-  --on-accent: #ffffff;
-  --accent-soft: #fdebdd;
-
-  --focus: #178ec8;
-
-  --status-open: #0b6fa4;
-  --status-open-soft: #e1f1fa;
-  --status-progress: #8a4b00;
-  --status-progress-soft: #fff1dc;
-  --status-done: #1e7a46;
-  --status-done-soft: #e3f4ea;
-  --danger: #b42318;
-  --danger-soft: #fdecea;
-
-  --shadow-card: 0 1px 2px rgba(0, 32, 96, 0.06), 0 4px 12px rgba(0, 32, 96, 0.06);
-
+  --surface: light-dark(#f4f6fa, #0a1430);
+  --surface-raised: light-dark(#ffffff, #111d3f);
+  --surface-sunken: light-dark(#e9edf4, #07102a);
+  --field: light-dark(var(--surface-raised), var(--surface)); /* no escuro, o campo fica mais fundo que o card */
+  --line: light-dark(#d5dce7, #22305a);
+  --line-strong: light-dark(#7b8698, #6a7aa0);
+  --ink: light-dark(#161f28, #eef2f8);
+  --ink-muted: light-dark(#5b6574, #a9b4c8);
+  --primary: light-dark(#002060, #8fb0f0);
+  --primary-hover: light-dark(#00164a, #a9c2f4);
+  --on-primary: light-dark(#ffffff, #0a1430);
+  --primary-soft: light-dark(#e3eaf7, #1a2a55);
+  --accent: light-dark(#b8520a, #f79a16); /* laranja escurecido no claro: 4.9:1 com texto branco */
+  --accent-hover: light-dark(#9e4508, #f9ac45);
+  --on-accent: light-dark(#ffffff, #161f28);
+  --accent-soft: light-dark(#fdebdd, #3a2208);
+  --focus: light-dark(#178ec8, #f79a16);
+  --status-open: light-dark(#0b6fa4, #7cc4ee);
+  --status-open-soft: light-dark(#e1f1fa, #0e2a44);
+  --status-progress: light-dark(#8a4b00, #f7b85a);
+  --status-progress-soft: light-dark(#fff1dc, #3a2608);
+  --status-done: light-dark(#1e7a46, #7dd3a0);
+  --status-done-soft: light-dark(#e3f4ea, #0f3221);
+  --danger: light-dark(#b42318, #ff8f8f);
+  --danger-soft: light-dark(#fdecea, #3b1730);
+  /* light-dark só vale para cores: a sombra troca só a cor de cada camada (a segunda some no escuro). */
+  --shadow-card:
+    0 1px 2px light-dark(rgba(0, 32, 96, 0.06), rgba(0, 0, 0, 0.4)),
+    0 4px 12px light-dark(rgba(0, 32, 96, 0.06), transparent);
   /* --font-jakarta vem do next/font no layout; Gilroy só entra com licença */
   --font-sans: var(--font-jakarta), "Gilroy", system-ui, -apple-system, "Segoe UI", sans-serif;
-
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -49,49 +45,18 @@
   --space-6: 32px;
   --space-7: 48px;
   --space-8: 64px;
-
   --radius-sm: 8px;
   --radius-md: 16px;
   --radius-lg: 24px;
   --radius-full: 999px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
+:root[data-theme="light"] {
+  color-scheme: light;
+}
 
-    --surface: #0a1430;
-    --surface-raised: #111d3f;
-    --surface-sunken: #07102a;
-    --field: var(--surface);
-    --line: #22305a;
-    --line-strong: #6a7aa0;
-
-    --ink: #eef2f8;
-    --ink-muted: #a9b4c8;
-
-    --primary: #8fb0f0;
-    --primary-hover: #a9c2f4;
-    --on-primary: #0a1430;
-    --primary-soft: #1a2a55;
-    --accent: #f79a16;
-    --accent-hover: #f9ac45;
-    --on-accent: #161f28;
-    --accent-soft: #3a2208;
-
-    --focus: #f79a16;
-
-    --status-open: #7cc4ee;
-    --status-open-soft: #0e2a44;
-    --status-progress: #f7b85a;
-    --status-progress-soft: #3a2608;
-    --status-done: #7dd3a0;
-    --status-done-soft: #0f3221;
-    --danger: #ff8f8f;
-    --danger-soft: #3b1730;
-
-    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
-  }
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 body {
