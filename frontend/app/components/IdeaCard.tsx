@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { CATEGORIES, COURSES, type Idea } from "../ideas";
+import { CATEGORIES, COURSE_SHORT, COURSES, type Idea } from "../ideas";
 import { Avatar } from "./Avatar";
 import { Icon } from "./Icon";
 import styles from "./IdeaCard.module.css";
@@ -26,27 +26,20 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 // Só o que a API devolve hoje: sem habilidades e sem @ do Discord.
-// No mural, o card não tem ação: o título leva à página da ideia (é lá que se participa) e a descrição corta em três linhas.
-// Quem já participa vê o selo "Você participa" e a borda de destaque.
-// `full` é a própria página da ideia: título vira h1, descrição inteira e sem link (já estamos nela).
-// `action` vai no rodapé: a página põe ali o "Quero participar".
+// No mural, o card não tem ação (o título leva à página da ideia, é lá que se participa) e todos têm a mesma altura:
+// etiqueta em 1 linha, título em até 2, descrição em 3 e o rodapé sempre embaixo. Quem já participa vê a borda de
+// destaque e o selo "Você participa" na linha do autor.
+// `full` é a própria página da ideia: título vira h1, nada é cortado e não há link (já estamos nela).
+// `action` ocupa a direita da linha do autor: a página põe ali o "Quero participar".
 export function IdeaCard({ idea, full = false, action }: { idea: Idea; full?: boolean; action?: ReactNode }) {
   const Title = full ? "h1" : "h3";
   return (
     <article className={[`card`, styles.card, full && styles.full, idea.interested && styles.interested].filter(Boolean).join(" ")}>
       <header className={styles.head}>
         <p className={styles.eyebrow}>
-          {COURSES[idea.course] ?? idea.course} · {CATEGORIES[idea.category] ?? idea.category}
+          {(full ? COURSES : COURSE_SHORT)[idea.course] ?? idea.course} · {CATEGORIES[idea.category] ?? idea.category}
         </p>
-        <div className={styles.badges}>
-          <StatusBadge status={idea.status} />
-          {idea.interested && (
-            <span className={`${styles.badge} ${styles.joined}`}>
-              <Icon name="circle-check" size={14} />
-              Você participa
-            </span>
-          )}
-        </div>
+        <StatusBadge status={idea.status} />
       </header>
       <Title className={styles.title}>
         {full ? (
@@ -57,22 +50,36 @@ export function IdeaCard({ idea, full = false, action }: { idea: Idea; full?: bo
           </Link>
         )}
       </Title>
-      <p className={full ? styles.desc : `${styles.desc} ${styles.clamp}`}>{idea.description}</p>
+      <p className={styles.desc}>{idea.description}</p>
       <footer className={styles.foot}>
-        <div className={styles.who}>
-          <Avatar name={idea.author.name} />
-          <div>
+        <div className={styles.byline}>
+          <div className={styles.who}>
+            <Avatar name={idea.author.name} />
             <p className={styles.author}>{idea.author.name}</p>
-            <p className={styles.meta}>
-              Precisa de {idea.slots} {idea.slots === 1 ? "pessoa" : "pessoas"} · {idea.interest_count}{" "}
-              {idea.interest_count === 1 ? "interessado" : "interessados"}
-            </p>
-            <p className={styles.meta}>
-              postada em <time dateTime={idea.created_at}>{dayMonth.format(new Date(idea.created_at))}</time>
-            </p>
           </div>
+          {action ??
+            (idea.interested && (
+              <span className={`${styles.badge} ${styles.joined}`}>
+                <Icon name="circle-check" size={14} />
+                Você participa
+              </span>
+            ))}
         </div>
-        {action}
+        <ul className={styles.facts}>
+          <li>
+            <Icon name="users" size={14} />
+            {idea.slots} {idea.slots === 1 ? "vaga" : "vagas"}
+          </li>
+          <li>
+            <Icon name="hand" size={14} />
+            {idea.interest_count} {idea.interest_count === 1 ? "interessado" : "interessados"}
+          </li>
+          <li>
+            <Icon name="calendar" size={14} />
+            <span className="sr-only">postada em </span>
+            <time dateTime={idea.created_at}>{dayMonth.format(new Date(idea.created_at))}</time>
+          </li>
+        </ul>
       </footer>
     </article>
   );
