@@ -10,6 +10,22 @@ import (
 	"time"
 )
 
+const addInterest = `-- name: AddInterest :exec
+INSERT INTO interests (idea_id, user_id) VALUES ($1, $2)
+ON CONFLICT DO NOTHING
+`
+
+type AddInterestParams struct {
+	IdeaID int64
+	UserID int64
+}
+
+// Repetir não dá erro nem duplica: a chave (idea_id, user_id) já existe e o insert vira nada.
+func (q *Queries) AddInterest(ctx context.Context, arg AddInterestParams) error {
+	_, err := q.db.Exec(ctx, addInterest, arg.IdeaID, arg.UserID)
+	return err
+}
+
 const createIdea = `-- name: CreateIdea :one
 
 WITH i AS (
@@ -18,7 +34,8 @@ WITH i AS (
     RETURNING id, author_id, title, description, course, category, slots, status, created_at
 )
 SELECT i.id, i.title, i.description, i.course, i.category, i.slots, i.status, i.created_at,
-       u.id AS author_id, u.name AS author_name
+       u.id AS author_id, u.name AS author_name,
+       0::bigint AS interest_count, false AS interested
 FROM i
 JOIN users u ON u.id = i.author_id
 `
@@ -33,19 +50,23 @@ type CreateIdeaParams struct {
 }
 
 type CreateIdeaRow struct {
-	ID          int64
-	Title       string
-	Description string
-	Course      string
-	Category    string
-	Slots       int32
-	Status      string
-	CreatedAt   time.Time
-	AuthorID    int64
-	AuthorName  string
+	ID            int64
+	Title         string
+	Description   string
+	Course        string
+	Category      string
+	Slots         int32
+	Status        string
+	CreatedAt     time.Time
+	AuthorID      int64
+	AuthorName    string
+	InterestCount int64
+	Interested    bool
 }
 
 // Create, List e Get devolvem as mesmas colunas, na mesma ordem: assim as structs geradas são conversíveis entre si.
+// interest_count e interested dizem quantos marcaram "quero participar" e se quem pede (viewer) é um deles; viewer 0 = visitante.
+// Ideia recém-criada ainda não tem interessados: as duas colunas saem fixas.
 func (q *Queries) CreateIdea(ctx context.Context, arg CreateIdeaParams) (CreateIdeaRow, error) {
 	row := q.db.QueryRow(ctx, createIdea,
 		arg.AuthorID,
@@ -67,33 +88,44 @@ func (q *Queries) CreateIdea(ctx context.Context, arg CreateIdeaParams) (CreateI
 		&i.CreatedAt,
 		&i.AuthorID,
 		&i.AuthorName,
+		&i.InterestCount,
+		&i.Interested,
 	)
 	return i, err
 }
 
 const getIdea = `-- name: GetIdea :one
 SELECT i.id, i.title, i.description, i.course, i.category, i.slots, i.status, i.created_at,
-       u.id AS author_id, u.name AS author_name
+       u.id AS author_id, u.name AS author_name,
+       (SELECT count(*) FROM interests n WHERE n.idea_id = i.id) AS interest_count,
+       EXISTS (SELECT 1 FROM interests n WHERE n.idea_id = i.id AND n.user_id = $1) AS interested
 FROM ideas i
 JOIN users u ON u.id = i.author_id
-WHERE i.id = $1
+WHERE i.id = $2
 `
 
-type GetIdeaRow struct {
-	ID          int64
-	Title       string
-	Description string
-	Course      string
-	Category    string
-	Slots       int32
-	Status      string
-	CreatedAt   time.Time
-	AuthorID    int64
-	AuthorName  string
+type GetIdeaParams struct {
+	Viewer int64
+	ID     int64
 }
 
-func (q *Queries) GetIdea(ctx context.Context, id int64) (GetIdeaRow, error) {
-	row := q.db.QueryRow(ctx, getIdea, id)
+type GetIdeaRow struct {
+	ID            int64
+	Title         string
+	Description   string
+	Course        string
+	Category      string
+	Slots         int32
+	Status        string
+	CreatedAt     time.Time
+	AuthorID      int64
+	AuthorName    string
+	InterestCount int64
+	Interested    bool
+}
+
+func (q *Queries) GetIdea(ctx context.Context, arg GetIdeaParams) (GetIdeaRow, error) {
+	row := q.db.QueryRow(ctx, getIdea, arg.Viewer, arg.ID)
 	var i GetIdeaRow
 	err := row.Scan(
 		&i.ID,
@@ -106,35 +138,57 @@ func (q *Queries) GetIdea(ctx context.Context, id int64) (GetIdeaRow, error) {
 		&i.CreatedAt,
 		&i.AuthorID,
 		&i.AuthorName,
+		&i.InterestCount,
+		&i.Interested,
 	)
 	return i, err
 }
 
+const getIdeaAuthor = `-- name: GetIdeaAuthor :one
+SELECT author_id FROM ideas WHERE id = $1
+`
+
+func (q *Queries) GetIdeaAuthor(ctx context.Context, id int64) (int64, error) {
+	row := q.db.QueryRow(ctx, getIdeaAuthor, id)
+	var author_id int64
+	err := row.Scan(&author_id)
+	return author_id, err
+}
+
 const listIdeas = `-- name: ListIdeas :many
 SELECT i.id, i.title, i.description, i.course, i.category, i.slots, i.status, i.created_at,
-       u.id AS author_id, u.name AS author_name
+       u.id AS author_id, u.name AS author_name,
+       (SELECT count(*) FROM interests n WHERE n.idea_id = i.id) AS interest_count,
+       EXISTS (SELECT 1 FROM interests n WHERE n.idea_id = i.id AND n.user_id = $1) AS interested
 FROM ideas i
 JOIN users u ON u.id = i.author_id
 ORDER BY i.created_at DESC, i.id DESC
-LIMIT $1
+LIMIT $2
 `
 
+type ListIdeasParams struct {
+	Viewer int64
+	Max    *int32
+}
+
 type ListIdeasRow struct {
-	ID          int64
-	Title       string
-	Description string
-	Course      string
-	Category    string
-	Slots       int32
-	Status      string
-	CreatedAt   time.Time
-	AuthorID    int64
-	AuthorName  string
+	ID            int64
+	Title         string
+	Description   string
+	Course        string
+	Category      string
+	Slots         int32
+	Status        string
+	CreatedAt     time.Time
+	AuthorID      int64
+	AuthorName    string
+	InterestCount int64
+	Interested    bool
 }
 
 // max NULL = sem limite (LIMIT NULL é o mesmo que não ter LIMIT); o visitante recebe só uma prévia.
-func (q *Queries) ListIdeas(ctx context.Context, max *int32) ([]ListIdeasRow, error) {
-	rows, err := q.db.Query(ctx, listIdeas, max)
+func (q *Queries) ListIdeas(ctx context.Context, arg ListIdeasParams) ([]ListIdeasRow, error) {
+	rows, err := q.db.Query(ctx, listIdeas, arg.Viewer, arg.Max)
 	if err != nil {
 		return nil, err
 	}
@@ -153,6 +207,8 @@ func (q *Queries) ListIdeas(ctx context.Context, max *int32) ([]ListIdeasRow, er
 			&i.CreatedAt,
 			&i.AuthorID,
 			&i.AuthorName,
+			&i.InterestCount,
+			&i.Interested,
 		); err != nil {
 			return nil, err
 		}
@@ -162,4 +218,59 @@ func (q *Queries) ListIdeas(ctx context.Context, max *int32) ([]ListIdeasRow, er
 		return nil, err
 	}
 	return items, nil
+}
+
+const listInterests = `-- name: ListInterests :many
+SELECT u.id, u.name, u.avatar_url, u.discord_id
+FROM interests n
+JOIN users u ON u.id = n.user_id
+WHERE n.idea_id = $1
+ORDER BY n.created_at, n.user_id
+`
+
+type ListInterestsRow struct {
+	ID        int64
+	Name      string
+	AvatarUrl *string
+	DiscordID *string
+}
+
+// Em ordem de chegada: quem marcou primeiro aparece primeiro para o autor.
+func (q *Queries) ListInterests(ctx context.Context, ideaID int64) ([]ListInterestsRow, error) {
+	rows, err := q.db.Query(ctx, listInterests, ideaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListInterestsRow
+	for rows.Next() {
+		var i ListInterestsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.AvatarUrl,
+			&i.DiscordID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const removeInterest = `-- name: RemoveInterest :exec
+DELETE FROM interests WHERE idea_id = $1 AND user_id = $2
+`
+
+type RemoveInterestParams struct {
+	IdeaID int64
+	UserID int64
+}
+
+func (q *Queries) RemoveInterest(ctx context.Context, arg RemoveInterestParams) error {
+	_, err := q.db.Exec(ctx, removeInterest, arg.IdeaID, arg.UserID)
+	return err
 }

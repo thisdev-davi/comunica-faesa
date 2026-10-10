@@ -14,6 +14,16 @@ export type Idea = {
   status: string;
   author: { id: number; name: string };
   created_at: string;
+  interest_count: number; // fatia 5 (docs/contratos/fatia-5-quero-participar.md)
+  interested: boolean; // quem pede está na lista
+  interests?: Interest[]; // só vem para o autor
+};
+
+export type Interest = {
+  id: number;
+  name: string;
+  avatar_url: string | null;
+  discord_id: string | null;
 };
 
 export type ApiError = {

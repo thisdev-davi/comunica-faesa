@@ -15,6 +15,7 @@ const ABOUT = "Ideias de projeto postadas por alunos de TI da FAESA.";
 // Repassa o cookie do navegador: sem ele a API trata todo mundo como visitante e corta o mural em 3 ideias.
 async function IdeaList() {
   const cookie = (await cookies()).toString();
+  const me = await getMe();
   let items: Idea[];
   try {
     const res = await fetch(`${API_URL}/api/ideas`, { headers: { cookie } });
@@ -43,7 +44,7 @@ async function IdeaList() {
           ))}
         </ul>
       )}
-      {!(await getMe()) && (
+      {!me && (
         <p className={styles.more}>
           <Link href="/login">Entre com Discord</Link> para ver o mural todo.
         </p>
