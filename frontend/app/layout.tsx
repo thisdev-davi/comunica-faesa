@@ -23,13 +23,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <a className={styles.skip} href="#conteudo">
           Pular para o conteúdo
         </a>
+        {/* A barra ocupa a tela toda; o conteúdo dela (.bar) tem a largura do mural, alinhado às bordas da grade. */}
         <header className={styles.head}>
-          <Link href="/" className={styles.brand}>
-            <Logo />
-          </Link>
-          <Suspense fallback={null}>
-            <UserMenu />
-          </Suspense>
+          <div className={styles.bar}>
+            <Link href="/" className={styles.brand}>
+              <Logo />
+            </Link>
+            <Suspense fallback={null}>
+              <UserMenu />
+            </Suspense>
+          </div>
         </header>
         {children}
       </body>
