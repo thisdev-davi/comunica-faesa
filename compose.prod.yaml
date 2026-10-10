@@ -1,0 +1,66 @@
+# Produção na VPS (/opt/comunica-faesa): banco, API e front isolados neste projeto, sem porta aberta no host.
+# O HTTPS vem do Caddy compartilhado em /opt/proxy, que alcança comunica-web e comunica-api pela rede externa "proxy".
+# Os nomes dos serviços viram nomes na rede "proxy", que é de todos os projetos: por isso comunica-*, e não api/web.
+# Segredos no .env ao lado deste arquivo (ver README, "Deploy na VPS").
+name: comunica
+services:
+  db:
+    image: postgres:17-alpine
+    restart: always
+    logging: &logs
+      # log do Docker sem teto enche o disco da VPS: até 3 arquivos de 10 MB por container
+      driver: json-file
+      options: { max-size: 10m, max-file: "3" }
+    environment:
+      POSTGRES_USER: comunica
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: comunica
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U comunica -d comunica"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # roda as migrations e sai; a API só sobe se ele terminar sem erro
+  migrate:
+    build: { context: backend, target: migrate }
+    logging: *logs
+    environment:
+      GOOSE_DBSTRING: postgres://comunica:${POSTGRES_PASSWORD}@db:5432/comunica?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+
+  comunica-api:
+    build: backend
+    restart: always
+    logging: *logs
+    environment:
+      DATABASE_URL: postgres://comunica:${POSTGRES_PASSWORD}@db:5432/comunica?sslmode=disable
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
+      DISCORD_REDIRECT_URL: ${DISCORD_REDIRECT_URL}
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks: [default, proxy]
+
+  comunica-web:
+    build: frontend
+    restart: always
+    logging: *logs
+    environment:
+      # o front fala com a API por dentro do Docker; o navegador chega nela pelo Caddy (/api/*)
+      API_URL: http://comunica-api:8090
+      DISCORD_INVITE_URL: ${DISCORD_INVITE_URL}
+    networks: [default, proxy]
+
+networks:
+  proxy:
+    external: true
+
+volumes:
+  db:
