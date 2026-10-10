@@ -81,7 +81,7 @@ O formato `{ "items": [...] }` não muda. O corte é na API: o visitante não re
 ## Front
 
 - `/cadastro`: visitante vai para `/login`; quem já tem curso vai para `/`. Senão, formulário com o select de curso (rótulos da fatia 1), erro por campo vindo do `400` e, no sucesso, vai para `/`.
-- Mural (`/`): logado sem curso vai para `/cadastro`. Visitante vê a lista e, depois dela, o bloco "🔒 Entre com Discord para ver o mural todo" com link para `/login`.
+- Mural (`/`): logado sem curso vai para `/cadastro`. Visitante vê a lista e, depois dela, o convite "Entre com Discord para ver o mural todo" com link para `/login` (sem emoji: o design system não usa emoji na interface). O topo do mural também convida a entrar.
 - O mural é renderizado no servidor do Next, que chama a API Go direto: ele repassa o cookie do navegador, senão a API sempre o trataria como visitante.
 
 ## Pronto quando
