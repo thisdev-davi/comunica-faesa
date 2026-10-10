@@ -20,6 +20,12 @@ type Idea struct {
 	CreatedAt   time.Time
 }
 
+type Interest struct {
+	IdeaID    int64
+	UserID    int64
+	CreatedAt time.Time
+}
+
 type Session struct {
 	TokenHash []byte
 	UserID    int64
