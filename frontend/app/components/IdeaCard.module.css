@@ -35,13 +35,13 @@
 
 .head {
   display: flex;
-  flex-wrap: wrap; /* card estreito: os selos descem para baixo do curso */
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
 }
 
 .eyebrow {
+  min-width: 0;
   margin: 0;
   font-size: 11px;
   line-height: 16px;
@@ -70,13 +70,37 @@
   color: var(--ink-muted);
 }
 
-/* No mural, o resumo corta em três linhas; a descrição inteira fica na página da ideia. */
-.clamp {
+/* Mural: cada parte tem altura fixa, então todos os cards ficam iguais. O que passa corta com "…";
+   o min-height guarda o espaço quando o texto é curto. A página da ideia (.full) mostra tudo. */
+.card:not(.full) .eyebrow {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card:not(.full) .title,
+.card:not(.full) .desc {
   display: -webkit-box;
   -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card:not(.full) .title {
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  min-height: 48px; /* 2 × 24px */
+}
+
+.card:not(.full) .desc {
   -webkit-line-clamp: 3;
   line-clamp: 3;
+  min-height: 60px; /* 3 × 20px */
+}
+
+.card:not(.full) .author {
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Página da ideia: o mesmo card, com título e texto maiores. */
@@ -96,36 +120,64 @@
   border-color: var(--accent);
 }
 
-.badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
 /* Selo accent do design system: fundo accent-soft com texto ink. */
 .joined {
   background: var(--accent-soft);
   color: var(--ink);
 }
 
-/* Autor à esquerda, botão à direita; em card estreito, o botão desce para a linha de baixo. */
+/* margin-top: auto empurra o rodapé para baixo: com os cards esticados na grade, os rodapés se alinham. */
 .foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  padding-top: var(--space-4);
+  margin-top: auto;
+  border-top: 1px solid var(--line);
+}
+
+/* Autor à esquerda; à direita, o selo (mural) ou o botão (página). Em tela estreita, o botão desce. */
+.byline {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  min-width: 0;
-  padding-top: var(--space-4);
-  margin-top: var(--space-1);
-  border-top: 1px solid var(--line);
 }
 
 .who {
   display: flex;
+  flex: 1;
   align-items: center;
   gap: var(--space-2);
   min-width: 0;
+}
+
+/* Vagas, interessados e data: ícone + texto, distribuídos na largura do card. */
+.facts {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ink-muted);
+}
+
+.facts li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.full .facts {
+  justify-content: flex-start;
+  gap: var(--space-5);
+  font-size: 13px;
 }
 
 .author {
@@ -135,13 +187,6 @@
   line-height: 18px;
   font-weight: 600;
   color: var(--ink);
-}
-
-.meta {
-  margin: 0;
-  font-size: 13px;
-  line-height: 20px;
-  color: var(--ink-muted);
 }
 
 .badge {

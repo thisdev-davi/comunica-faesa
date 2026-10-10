@@ -11,9 +11,16 @@
 
 .hero {
   display: flex;
+  flex-wrap: wrap; /* no celular, o botão desce para baixo do texto */
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4) var(--space-6);
+}
+
+.intro {
+  display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  margin-bottom: var(--space-3);
 }
 
 .display {
@@ -21,8 +28,7 @@
   font-size: 32px;
   line-height: 40px;
   font-weight: 800;
-  letter-spacing: 0.01em;
-  text-transform: uppercase;
+  letter-spacing: -0.01em; /* em caixa normal, o título grande fica melhor levemente apertado */
   color: var(--ink);
 }
 
@@ -43,10 +49,19 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: var(--space-6);
-  align-items: start;
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+/* O card ocupa o <li> inteiro: com a altura fixa das partes, a grade fica uniforme. */
+.grid > li {
+  display: flex;
+}
+
+.grid > li > * {
+  flex: 1;
+  min-width: 0;
 }
 
 .more {

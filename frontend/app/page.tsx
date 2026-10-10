@@ -2,9 +2,9 @@ import { cookies } from "next/headers";
 import { redirect, unstable_rethrow } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
+import { ButtonLink } from "./components/Button";
 import { IdeaCard } from "./components/IdeaCard";
 import { StatePanel } from "./components/StatePanel";
-import { IdeaForm } from "./idea-form";
 import { API_URL, type Idea } from "./ideas";
 import { getMe } from "./me";
 import styles from "./mural.module.css";
@@ -83,26 +83,35 @@ async function Lead() {
   );
 }
 
-// Só quem está logado posta; a API também recusa (401), aqui é só para não mostrar um formulário que vai falhar.
+// O formulário mora em /ideias/nova; o mural só leva até ele, e só para quem está logado.
 // Logado sem curso ainda não terminou o cadastro: vai para lá antes de usar o mural.
-async function PostIdea() {
+async function PostAction() {
   const me = await getMe();
   if (me && !me.course) redirect("/cadastro");
-  return me && <IdeaForm />;
+  return (
+    me && (
+      <ButtonLink href="/ideias/nova" icon="lightbulb">
+        Postar ideia
+      </ButtonLink>
+    )
+  );
 }
 
 export default function Home() {
   return (
     <main id="conteudo" className={styles.page}>
+      {/* Título e texto à esquerda, "Postar ideia" à direita: as bordas batem com as da grade de cards. */}
       <div className={styles.hero}>
-        <h1 className={styles.display}>Mural de ideias</h1>
-        <Suspense fallback={<p className={styles.lead}>{ABOUT}</p>}>
-          <Lead />
+        <div className={styles.intro}>
+          <h1 className={styles.display}>Mural de ideias</h1>
+          <Suspense fallback={<p className={styles.lead}>{ABOUT}</p>}>
+            <Lead />
+          </Suspense>
+        </div>
+        <Suspense fallback={null}>
+          <PostAction />
         </Suspense>
       </div>
-      <Suspense fallback={null}>
-        <PostIdea />
-      </Suspense>
       <h2 className="sr-only">Ideias</h2>
       <Suspense fallback={<Skeleton />}>
         <IdeaList />

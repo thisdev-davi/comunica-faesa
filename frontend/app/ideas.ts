@@ -37,6 +37,13 @@ export const COURSES: Record<string, string> = {
   ads: "ADS",
 };
 
+// Sigla do curso para a etiqueta do card, que precisa caber numa linha; a página da ideia usa o nome inteiro.
+export const COURSE_SHORT: Record<string, string> = {
+  cc: "CC",
+  eng: "ENG",
+  ads: "ADS",
+};
+
 export const CATEGORIES: Record<string, string> = {
   web: "Web",
   mobile: "Mobile",

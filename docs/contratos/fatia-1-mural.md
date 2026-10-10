@@ -15,6 +15,8 @@ Login com Discord ([fatia 2](fatia-2-login.md)), habilidades, filtros, busca, pa
 > **Atualizado pela [fatia 4](fatia-4-pagina-da-ideia.md):** cada ideia tem uma página própria (`GET /api/ideas/{id}`, só para quem está logado); o card do mural leva até ela e corta a descrição em três linhas.
 >
 > **Atualizado pela [fatia 5](fatia-5-quero-participar.md):** cada item do `GET /api/ideas` ganha `interest_count` e `interested`.
+>
+> **Atualizado nos ajustes de UI:** o formulário de postar saiu do mural para a página `/ideias/nova` (só logado com curso), aberta pelo botão "Postar ideia" no topo do mural. Depois de postar, o aluno vai para a página da ideia nova (`/ideias/<id>`).
 
 ## Banco
 

@@ -33,14 +33,12 @@
   gap: var(--space-4);
 }
 
-/* title-2 do design system: título de seção em caixa alta. */
+/* title-2 do design system, em caixa normal: só botões e a etiqueta do card ficam em caixa alta. */
 .section {
   margin: 0;
   font-size: 18px;
   line-height: 24px;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
   color: var(--ink);
 }
 
