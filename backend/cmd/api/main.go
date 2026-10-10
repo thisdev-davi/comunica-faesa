@@ -60,6 +60,7 @@ func run() error {
 	mux.HandleFunc("PATCH /api/me", a.SetCourse)
 	mux.HandleFunc("POST /api/ideas", h.Create)
 	mux.HandleFunc("GET /api/ideas", h.List)
+	mux.HandleFunc("GET /api/ideas/{id}", h.Get)
 
 	// ponytail: sem graceful shutdown; adicionar quando houver deploy.
 	srv := &http.Server{

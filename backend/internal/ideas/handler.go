@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/jackc/pgx/v5"
 )
 
 const (
@@ -129,6 +132,36 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		items = append(items, toResponse(row))
 	}
 	writeJSON(w, http.StatusOK, map[string][]ideaResponse{"items": items})
+}
+
+// Get devolve uma ideia, só para quem está logado: o visitante fica na prévia do mural.
+func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
+	userID, err := h.userID(r)
+	if err != nil {
+		internalError(w, "session", err)
+		return
+	}
+	if userID == 0 {
+		writeJSON(w, http.StatusUnauthorized, errorResponse{Error: "unauthenticated"})
+		return
+	}
+
+	// Id que não é inteiro positivo é só uma ideia que não existe: 404, sem ir ao banco.
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil || id <= 0 {
+		writeJSON(w, http.StatusNotFound, errorResponse{Error: "not_found"})
+		return
+	}
+	row, err := h.q.GetIdea(r.Context(), id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		writeJSON(w, http.StatusNotFound, errorResponse{Error: "not_found"})
+		return
+	}
+	if err != nil {
+		internalError(w, "get idea", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, toResponse(ListIdeasRow(row)))
 }
 
 // validate limpa os campos de texto (trim) e devolve os erros por campo; vazio = válido.
