@@ -1,5 +1,8 @@
+import Link from "next/link";
+import type { ReactNode } from "react";
 import { CATEGORIES, COURSES, type Idea } from "../ideas";
 import { Avatar } from "./Avatar";
+import { Icon } from "./Icon";
 import styles from "./IdeaCard.module.css";
 
 const STATUS: Record<string, { label: string; tone: string }> = {
@@ -22,28 +25,54 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-// Só o que a API devolve hoje: sem habilidades, sem @ do Discord e sem "Quero participar".
-// A descrição aparece inteira: o corte em três linhas do design system espera a página da ideia, que ainda não existe.
-export function IdeaCard({ idea }: { idea: Idea }) {
+// Só o que a API devolve hoje: sem habilidades e sem @ do Discord.
+// No mural, o card não tem ação: o título leva à página da ideia (é lá que se participa) e a descrição corta em três linhas.
+// Quem já participa vê o selo "Você participa" e a borda de destaque.
+// `full` é a própria página da ideia: título vira h1, descrição inteira e sem link (já estamos nela).
+// `action` vai no rodapé: a página põe ali o "Quero participar".
+export function IdeaCard({ idea, full = false, action }: { idea: Idea; full?: boolean; action?: ReactNode }) {
+  const Title = full ? "h1" : "h3";
   return (
-    <article className={`card ${styles.card}`}>
+    <article className={[`card`, styles.card, full && styles.full, idea.interested && styles.interested].filter(Boolean).join(" ")}>
       <header className={styles.head}>
         <p className={styles.eyebrow}>
           {COURSES[idea.course] ?? idea.course} · {CATEGORIES[idea.category] ?? idea.category}
         </p>
-        <StatusBadge status={idea.status} />
-      </header>
-      <h3 className={styles.title}>{idea.title}</h3>
-      <p className={styles.desc}>{idea.description}</p>
-      <footer className={styles.foot}>
-        <Avatar name={idea.author.name} />
-        <div>
-          <p className={styles.author}>{idea.author.name}</p>
-          <p className={styles.meta}>
-            Precisa de {idea.slots} {idea.slots === 1 ? "pessoa" : "pessoas"} · postada em{" "}
-            <time dateTime={idea.created_at}>{dayMonth.format(new Date(idea.created_at))}</time>
-          </p>
+        <div className={styles.badges}>
+          <StatusBadge status={idea.status} />
+          {idea.interested && (
+            <span className={`${styles.badge} ${styles.joined}`}>
+              <Icon name="circle-check" size={14} />
+              Você participa
+            </span>
+          )}
         </div>
+      </header>
+      <Title className={styles.title}>
+        {full ? (
+          idea.title
+        ) : (
+          <Link href={`/ideias/${idea.id}`} className={styles.link}>
+            {idea.title}
+          </Link>
+        )}
+      </Title>
+      <p className={full ? styles.desc : `${styles.desc} ${styles.clamp}`}>{idea.description}</p>
+      <footer className={styles.foot}>
+        <div className={styles.who}>
+          <Avatar name={idea.author.name} />
+          <div>
+            <p className={styles.author}>{idea.author.name}</p>
+            <p className={styles.meta}>
+              Precisa de {idea.slots} {idea.slots === 1 ? "pessoa" : "pessoas"} · {idea.interest_count}{" "}
+              {idea.interest_count === 1 ? "interessado" : "interessados"}
+            </p>
+            <p className={styles.meta}>
+              postada em <time dateTime={idea.created_at}>{dayMonth.format(new Date(idea.created_at))}</time>
+            </p>
+          </div>
+        </div>
+        {action}
       </footer>
     </article>
   );

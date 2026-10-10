@@ -11,6 +11,10 @@ Login com Discord ([fatia 2](fatia-2-login.md)), habilidades, filtros, busca, pa
 > **Atualizado pela [fatia 2](fatia-2-login.md):** o autor da ideia é o usuário da sessão. O usuário fixo (`DEV_AUTHOR_ID`) usado nesta fatia foi removido.
 >
 > **Atualizado pela [fatia 3](fatia-3-cadastro.md):** `GET /api/ideas` devolve no máximo as 3 ideias mais recentes para visitante; logado vê todas.
+>
+> **Atualizado pela [fatia 4](fatia-4-pagina-da-ideia.md):** cada ideia tem uma página própria (`GET /api/ideas/{id}`, só para quem está logado); o card do mural leva até ela e corta a descrição em três linhas.
+>
+> **Atualizado pela [fatia 5](fatia-5-quero-participar.md):** cada item do `GET /api/ideas` ganha `interest_count` e `interested`.
 
 ## Banco
 

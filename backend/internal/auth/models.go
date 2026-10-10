@@ -20,6 +20,12 @@ type Idea struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+type Interest struct {
+	IdeaID    int64     `json:"idea_id"`
+	UserID    int64     `json:"user_id"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type Session struct {
 	TokenHash []byte    `json:"token_hash"`
 	UserID    int64     `json:"user_id"`

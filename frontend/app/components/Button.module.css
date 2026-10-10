@@ -45,6 +45,16 @@
   background: var(--primary-hover);
 }
 
+/* O convite para entrar em algo ("Quero participar"): no máximo um por card. */
+.accent {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.accent:hover {
+  background: var(--accent-hover);
+}
+
 .secondary {
   background: var(--surface-raised);
   color: var(--primary);

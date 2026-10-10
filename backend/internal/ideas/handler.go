@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/jackc/pgx/v5"
 )
 
 const (
@@ -59,6 +62,20 @@ type ideaResponse struct {
 	Status      string         `json:"status"`
 	Author      authorResponse `json:"author"`
 	CreatedAt   time.Time      `json:"created_at"`
+	// Quantos marcaram "quero participar" e se quem pede é um deles.
+	InterestCount int64 `json:"interest_count"`
+	Interested    bool  `json:"interested"`
+	// Só o autor recebe a lista. omitzero (Go 1.24+) tira só o nil: para quem não é autor o campo some,
+	// e o autor sem interessados recebe [] (omitempty tiraria os dois).
+	Interests []interestResponse `json:"interests,omitzero"`
+}
+
+// Mesmos campos, com os mesmos nomes, do ListInterestsRow gerado (por isso AvatarUrl, não AvatarURL): a conversão é direta.
+type interestResponse struct {
+	ID        int64   `json:"id"`
+	Name      string  `json:"name"`
+	AvatarUrl *string `json:"avatar_url"`
+	DiscordID *string `json:"discord_id"`
 }
 
 type errorResponse struct {
@@ -67,13 +84,8 @@ type errorResponse struct {
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	authorID, err := h.userID(r)
-	if err != nil {
-		internalError(w, "session", err)
-		return
-	}
-	if authorID == 0 {
-		writeJSON(w, http.StatusUnauthorized, errorResponse{Error: "unauthenticated"})
+	authorID, ok := h.loggedIn(w, r)
+	if !ok {
 		return
 	}
 
@@ -119,7 +131,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	if userID == 0 {
 		max = new(int32(previewSize)) // Go 1.26+: new aceita um valor e devolve o ponteiro para uma cópia dele
 	}
-	rows, err := h.q.ListIdeas(r.Context(), max)
+	rows, err := h.q.ListIdeas(r.Context(), ListIdeasParams{Viewer: userID, Max: max})
 	if err != nil {
 		internalError(w, "list ideas", err)
 		return
@@ -129,6 +141,108 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		items = append(items, toResponse(row))
 	}
 	writeJSON(w, http.StatusOK, map[string][]ideaResponse{"items": items})
+}
+
+// Get devolve uma ideia, só para quem está logado: o visitante fica na prévia do mural.
+// O autor recebe também a lista de interessados, com o discord_id para chamar cada um.
+func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
+	userID, ok := h.loggedIn(w, r)
+	if !ok {
+		return
+	}
+	id, ok := pathID(r)
+	if !ok {
+		writeJSON(w, http.StatusNotFound, errorResponse{Error: "not_found"})
+		return
+	}
+	row, err := h.q.GetIdea(r.Context(), GetIdeaParams{ID: id, Viewer: userID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		writeJSON(w, http.StatusNotFound, errorResponse{Error: "not_found"})
+		return
+	}
+	if err != nil {
+		internalError(w, "get idea", err)
+		return
+	}
+	resp := toResponse(ListIdeasRow(row))
+	if row.AuthorID == userID {
+		people, err := h.q.ListInterests(r.Context(), id)
+		if err != nil {
+			internalError(w, "list interests", err)
+			return
+		}
+		resp.Interests = make([]interestResponse, 0, len(people)) // não-nil: o autor sem interessados recebe []
+		for _, p := range people {
+			resp.Interests = append(resp.Interests, interestResponse(p))
+		}
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+// PutInterest é o "quero participar": sem aprovação, a pessoa entra direto na lista. Repetir não muda nada.
+func (h *Handler) PutInterest(w http.ResponseWriter, r *http.Request) {
+	userID, ok := h.loggedIn(w, r)
+	if !ok {
+		return
+	}
+	id, ok := pathID(r)
+	if !ok {
+		writeJSON(w, http.StatusNotFound, errorResponse{Error: "not_found"})
+		return
+	}
+	authorID, err := h.q.GetIdeaAuthor(r.Context(), id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		writeJSON(w, http.StatusNotFound, errorResponse{Error: "not_found"})
+		return
+	}
+	if err != nil {
+		internalError(w, "get idea author", err)
+		return
+	}
+	if authorID == userID {
+		writeJSON(w, http.StatusConflict, errorResponse{Error: "own_idea"})
+		return
+	}
+	if err := h.q.AddInterest(r.Context(), AddInterestParams{IdeaID: id, UserID: userID}); err != nil {
+		internalError(w, "add interest", err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// DeleteInterest é o "desistir". Responde 204 mesmo sem interesse ou sem ideia: o resultado é o mesmo, a pessoa não está na lista.
+func (h *Handler) DeleteInterest(w http.ResponseWriter, r *http.Request) {
+	userID, ok := h.loggedIn(w, r)
+	if !ok {
+		return
+	}
+	if id, ok := pathID(r); ok {
+		if err := h.q.RemoveInterest(r.Context(), RemoveInterestParams{IdeaID: id, UserID: userID}); err != nil {
+			internalError(w, "remove interest", err)
+			return
+		}
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// loggedIn devolve quem está logado; sem sessão já responde 401 (ou 500 se a sessão falhou) e devolve ok = false.
+func (h *Handler) loggedIn(w http.ResponseWriter, r *http.Request) (userID int64, ok bool) {
+	userID, err := h.userID(r)
+	if err != nil {
+		internalError(w, "session", err)
+		return 0, false
+	}
+	if userID == 0 {
+		writeJSON(w, http.StatusUnauthorized, errorResponse{Error: "unauthenticated"})
+		return 0, false
+	}
+	return userID, true
+}
+
+// pathID lê o {id} da rota. Id que não é inteiro positivo é só uma ideia que não existe: quem chama responde 404 sem ir ao banco.
+func pathID(r *http.Request) (int64, bool) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	return id, err == nil && id > 0
 }
 
 // validate limpa os campos de texto (trim) e devolve os erros por campo; vazio = válido.
@@ -173,15 +287,17 @@ func CheckOption(fields map[string]string, name, v string, allowed map[string]bo
 
 func toResponse(r ListIdeasRow) ideaResponse {
 	return ideaResponse{
-		ID:          r.ID,
-		Title:       r.Title,
-		Description: r.Description,
-		Course:      r.Course,
-		Category:    r.Category,
-		Slots:       r.Slots,
-		Status:      r.Status,
-		Author:      authorResponse{ID: r.AuthorID, Name: r.AuthorName},
-		CreatedAt:   r.CreatedAt.UTC(),
+		ID:            r.ID,
+		Title:         r.Title,
+		Description:   r.Description,
+		Course:        r.Course,
+		Category:      r.Category,
+		Slots:         r.Slots,
+		Status:        r.Status,
+		Author:        authorResponse{ID: r.AuthorID, Name: r.AuthorName},
+		CreatedAt:     r.CreatedAt.UTC(),
+		InterestCount: r.InterestCount,
+		Interested:    r.Interested,
 	}
 }
 

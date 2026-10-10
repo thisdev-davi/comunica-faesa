@@ -1,12 +1,41 @@
 /* Regras do .cf-card, .cf-idea e do StatusBadge (.cf-badge) do bundle.css do design system. */
 .card {
+  position: relative; /* âncora do link esticado do título */
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
 }
 
+/* O card todo é clicável sem aninhar elementos interativos: o ::after do link do título cobre o card. */
+.link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-md); /* o mesmo do .card: o anel de foco acompanha a borda */
+}
+
+.card:not(.interested):has(.link:hover) {
+  border-color: var(--line-strong);
+}
+
+/* O anel de foco contorna o card inteiro, não só o texto do título. */
+.link:focus-visible {
+  outline: none;
+}
+
+.link:focus-visible::after {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
 .head {
   display: flex;
+  flex-wrap: wrap; /* card estreito: os selos descem para baixo do curso */
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
@@ -41,14 +70,62 @@
   color: var(--ink-muted);
 }
 
+/* No mural, o resumo corta em três linhas; a descrição inteira fica na página da ideia. */
+.clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+
+/* Página da ideia: o mesmo card, com título e texto maiores. */
+.full .title {
+  font-size: 24px;
+  line-height: 32px;
+}
+
+.full .desc {
+  font-size: 15px;
+  line-height: 24px;
+  color: var(--ink);
+}
+
+/* Quem marcou "Quero participar" vê o card com a borda do destaque e o selo "Você participa". */
+.interested {
+  border-color: var(--accent);
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Selo accent do design system: fundo accent-soft com texto ink. */
+.joined {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+/* Autor à esquerda, botão à direita; em card estreito, o botão desce para a linha de baixo. */
 .foot {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
+  justify-content: space-between;
+  gap: var(--space-3);
   min-width: 0;
   padding-top: var(--space-4);
   margin-top: var(--space-1);
   border-top: 1px solid var(--line);
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
 }
 
 .author {
