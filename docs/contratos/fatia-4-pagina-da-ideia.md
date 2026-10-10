@@ -43,7 +43,7 @@ Erros:
 ## Front
 
 - `/ideias/[id]`: visitante vai para `/login`; logado sem curso vai para `/cadastro`. Senão, mostra curso, categoria, status, título, a descrição inteira, autor, vagas, data e um link "Voltar ao mural".
-- Ideia inexistente ou id inválido: página "Ideia não encontrada" com o link para o mural, com status HTTP 404.
+- Ideia inexistente ou id inválido: página "Ideia não encontrada" com o link para o mural. O status HTTP fica `200`, porque a página já começou a ser enviada (streaming) quando descobre que a ideia não existe; o Next marca a resposta com `noindex`. Um `404` de verdade pediria checar a ideia num Proxy antes de renderizar, o que não compensa numa página só para logado.
 - A página é renderizada no servidor do Next, que chama a API Go direto repassando o cookie do navegador (mesmo esquema do mural).
 - Card do mural: o título leva para a página da ideia (o card inteiro é clicável), e a descrição corta em três linhas.
 
