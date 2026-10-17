@@ -31,7 +31,13 @@ func do(t *testing.T, hf http.HandlerFunc, method, body string) *httptest.Respon
 // doID chama um handler de /api/events/{id} com o {id} preenchido, como o roteador faria.
 func doID(t *testing.T, hf http.HandlerFunc, method, id string) *httptest.ResponseRecorder {
 	t.Helper()
-	req := httptest.NewRequest(method, "/api/events/"+id, nil)
+	return doIDBody(t, hf, method, id, "")
+}
+
+// doIDBody é o doID com corpo, para o PUT do evento.
+func doIDBody(t *testing.T, hf http.HandlerFunc, method, id, body string) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(method, "/api/events/"+id, strings.NewReader(body))
 	req.SetPathValue("id", id)
 	rec := httptest.NewRecorder()
 	hf(rec, req)
@@ -114,6 +120,7 @@ func TestSessionErrorIs500(t *testing.T) {
 	h := NewHandler(nil, failing)
 	for name, hf := range map[string]http.HandlerFunc{
 		"POST": h.Create, "GET agenda": h.List, "GET um": h.Get, "PUT presença": h.PutAttendance, "DELETE presença": h.DeleteAttendance,
+		"PUT evento": h.Update, "DELETE evento": h.Delete,
 	} {
 		if rec := doID(t, hf, http.MethodGet, "1"); rec.Code != 500 || decode[errorResponse](t, rec).Error != "internal" {
 			t.Errorf("%s: status = %d (%s), quer 500 internal", name, rec.Code, rec.Body)
@@ -267,6 +274,90 @@ func TestAttendance(t *testing.T) {
 		if rec = doID(t, hf, http.MethodGet, "999999"); rec.Code != 404 || decode[errorResponse](t, rec).Error != "not_found" {
 			t.Errorf("%s inexistente: %d (%s), quer 404 not_found", name, rec.Code, rec.Body)
 		}
+	}
+}
+
+// Editar e apagar contra Postgres real: o criador e o moderador podem, os outros não (fatia 16).
+func TestUpdateAndDelete(t *testing.T) {
+	pool := testDB(t)
+	ctx := context.Background()
+	var authorID int64
+	if err := pool.QueryRow(ctx, "INSERT INTO users (name) VALUES ('Organizador de Teste'), ('Outro Aluno'), ('Moderadora de Teste') RETURNING id").Scan(&authorID); err != nil {
+		t.Fatal(err)
+	}
+	otherID, modID := authorID+1, authorID+2 // RESTART IDENTITY no testDB: os ids saem em sequência
+	if _, err := pool.Exec(ctx, "UPDATE users SET is_moderator = true WHERE id = $1", modID); err != nil {
+		t.Fatal(err)
+	}
+	author, other, mod, visitor := NewHandler(pool, loggedAs(authorID)), NewHandler(pool, loggedAs(otherID)), NewHandler(pool, loggedAs(modID)), NewHandler(pool, loggedAs(0))
+
+	rec := do(t, author.Create, http.MethodPost, body(future(time.Hour)))
+	if rec.Code != 201 {
+		t.Fatalf("POST: %d (%s)", rec.Code, rec.Body)
+	}
+	created := decode[eventResponse](t, rec)
+	id := strconv.FormatInt(created.ID, 10)
+	if rec = doID(t, other.PutAttendance, http.MethodPut, id); rec.Code != 204 {
+		t.Fatalf("PUT presença: %d (%s)", rec.Code, rec.Body)
+	}
+
+	later := time.Now().Add(72 * time.Hour).Truncate(time.Second)
+	edited := `{"title":"  Sala nova  ","description":"Mudou de sala","starts_at":"` + later.Format(time.RFC3339) + `","location":"Bloco C"}`
+	for _, step := range []struct {
+		name       string
+		hf         http.HandlerFunc
+		id, body   string
+		wantStatus int
+		wantError  string
+	}{
+		{"visitante edita", visitor.Update, id, edited, 401, "unauthenticated"},
+		{"outro aluno edita", other.Update, id, edited, 403, "not_author"},
+		{"outro aluno com corpo inválido continua 403", other.Update, id, `{`, 403, "not_author"},
+		{"outro aluno apaga", other.Delete, id, "", 403, "not_author"},
+		{"criador com data no passado", author.Update, id, body(future(-time.Hour)), 400, "validation_failed"},
+		{"criador edita evento que não existe", author.Update, "999999", edited, 404, "not_found"},
+		{"moderadora apaga evento que não existe", mod.Delete, "999999", "", 404, "not_found"},
+	} {
+		rec := doIDBody(t, step.hf, http.MethodPut, step.id, step.body)
+		if rec.Code != step.wantStatus || decode[errorResponse](t, rec).Error != step.wantError {
+			t.Errorf("%s: %d (%s), quer %d %s", step.name, rec.Code, rec.Body, step.wantStatus, step.wantError)
+		}
+	}
+
+	// O criador edita: os campos trocam (com trim), e autor, criação e presença ficam.
+	rec = doIDBody(t, author.Update, http.MethodPut, id, edited)
+	if rec.Code != 200 {
+		t.Fatalf("PUT do criador: %d (%s)", rec.Code, rec.Body)
+	}
+	want := created
+	want.Title, want.Description, want.StartsAt, want.Location, want.AttendeeCount = "Sala nova", "Mudou de sala", later.UTC(), "Bloco C", 1
+	if got := decode[eventResponse](t, rec); !reflect.DeepEqual(got, want) || strings.Contains(rec.Body.String(), `"attendees"`) {
+		t.Errorf("PUT devolveu %s, quer %+v", rec.Body, want)
+	}
+	// A moderadora edita evento alheio, e a resposta diz going do ponto de vista dela.
+	if rec = doIDBody(t, mod.Update, http.MethodPut, id, edited); rec.Code != 200 || decode[eventResponse](t, rec).Going {
+		t.Errorf("PUT da moderadora: %d (%s)", rec.Code, rec.Body)
+	}
+
+	// A moderadora apaga: o evento e a presença somem.
+	if rec = doID(t, mod.Delete, http.MethodDelete, id); rec.Code != 204 {
+		t.Fatalf("DELETE da moderadora: %d (%s)", rec.Code, rec.Body)
+	}
+	if rec = doID(t, author.Get, http.MethodGet, id); rec.Code != 404 {
+		t.Errorf("GET depois do DELETE: %d, quer 404", rec.Code)
+	}
+	var left int
+	if err := pool.QueryRow(ctx, "SELECT count(*) FROM event_attendees").Scan(&left); err != nil || left != 0 {
+		t.Errorf("presença depois do DELETE: %d (%v), quer 0", left, err)
+	}
+
+	// O criador apaga o próprio evento, mesmo depois de ele passar.
+	var past int64
+	if err := pool.QueryRow(ctx, "INSERT INTO events (author_id, title, description, starts_at, location) VALUES ($1, 'Passado', 'x', now() - interval '3 days', 'abc') RETURNING id", authorID).Scan(&past); err != nil {
+		t.Fatal(err)
+	}
+	if rec = doID(t, author.Delete, http.MethodDelete, strconv.FormatInt(past, 10)); rec.Code != 204 {
+		t.Errorf("DELETE do passado: %d (%s), quer 204", rec.Code, rec.Body)
 	}
 }
 

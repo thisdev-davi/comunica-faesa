@@ -76,7 +76,6 @@ Um aluno posta várias ideias; cada ideia reúne vários interessados; perfis e 
 - Lista de ideias postadas, mais recentes primeiro.
 - Cada card mostra título, curso, categoria, vagas e habilidades procuradas.
 - Botão para postar uma nova ideia (título, descrição, curso, categoria, quantas pessoas precisa, habilidades procuradas).
-- Comentários em cada ideia.
 
 **3. Participar de uma ideia**
 
@@ -116,12 +115,15 @@ Decidida em 16 de outubro de 2026. Quatro fatias, nesta ordem, cada uma com o pr
 | 13 — agenda de eventos | tabela `events`, criar evento, `/eventos` com os próximos, `/eventos/novo`, "Eventos" na barra | feita ([contrato](contratos/fatia-13-agenda-de-eventos.md), PR #30) |
 | 14 — página do evento e "vou" | tabela `event_attendees`, `/eventos/<id>`, confirmar e desistir da presença, lista de quem vai, contagem nos cards | feita ([contrato](contratos/fatia-14-presenca-em-eventos.md), PR #31) |
 | 15 — cargo de moderação | `users.is_moderator` lido dos cargos do Discord no login, `is_moderator` no `/api/me`, moderador apaga qualquer ideia | feita ([contrato](contratos/fatia-15-cargo-de-moderacao.md), PR #32) |
-| 16 — editar e apagar evento | criador e moderador editam e apagam, `/eventos/<id>/editar` | **próxima**: falta o contrato e o código |
+| 16 — editar e apagar evento | criador e moderador editam e apagam, `/eventos/<id>/editar` | feita ([contrato](contratos/fatia-16-editar-e-apagar-evento.md), PR #33) |
 
 **Onde estamos e o que falta**
 
-- Fatia 16: escrever `docs/contratos/fatia-16-editar-e-apagar-evento.md` no molde da [fatia 6](contratos/fatia-6-editar-e-apagar.md). `PUT /api/events/{id}` (mesma validação do `POST`, inclusive "no futuro") e `DELETE /api/events/{id}`, para o criador ou quem tem `is_moderator` (os outros: `403 not_author`); a presença vai junto no `DELETE` (`ON DELETE CASCADE`). No front, o painel com "Editar evento" e "Apagar evento" na página do evento e `/eventos/<id>/editar` com o formulário preenchido (o `datetime-local` recebe a hora de Brasília). O `events` precisa de uma query `IsModerator`, como a do pacote `ideas`.
+- A fase está completa: as quatro fatias foram feitas. O que ficou de fora de propósito está em "Fica para depois", no fim desta seção.
 - Deploy: todo merge na `main` sobe sozinho e roda as migrations. Para a moderação valer em produção, o root precisa preencher `DISCORD_MOD_ROLE_IDS` no `.env` da VPS e copiar o `compose.prod.yaml` novo (README, "Mudou o `compose.prod.yaml`"). Sem isso, a API sobe normalmente, só que sem moderadores.
+- Decidido em 17 de outubro de 2026: comentários nas ideias saíram do MVP. A conversa já vive no Discord, o "quero participar" e o "Chamar no Discord" cobrem a dúvida sobre a ideia, e comentário traria moderação nova. Foram para a fila em `IDEIA.md`.
+- Próximo: a fase de descoberta (filtros e busca, item 6 das funcionalidades), que começa pelo `grill-me` do Davi.
+- Lançamento: a plataforma é aberta para a comunidade no Discord assim que a fatia 16 estiver na `main`, sem esperar a descoberta. O uso real mostra a urgência dos filtros.
 
 **Evento**
 
@@ -165,5 +167,6 @@ Decidida em 16 de outubro de 2026. Quatro fatias, nesta ordem, cada uma com o pr
 - Build in public (acompanhamento diário), seguir pessoas e feed.
 - "Tô disponível" para aluno sem ideia.
 - Link de repositório na vitrine, hackathons e desafios internos.
+- Comentários nas ideias (a conversa fica no Discord).
 
 **Régua de decisão:** a pergunta não é "isso é legal?", é "sem isso, a dor principal continua sem solução?". Se a resposta é não, é desejável, não essencial — e vai para a fila.

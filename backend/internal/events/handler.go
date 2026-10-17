@@ -26,7 +26,8 @@ func NewHandler(db DBTX, userID func(*http.Request) (int64, error)) *Handler {
 	return &Handler{q: New(db), userID: userID}
 }
 
-// Corpo do POST. starts_at chega como texto para o erro de formato sair por campo (com time.Time no struct,
+// Corpo do POST e do PUT: criar e editar trocam os mesmos campos.
+// starts_at chega como texto para o erro de formato sair por campo (com time.Time no struct,
 // o Decode falharia inteiro com invalid_json); startsAt guarda o valor já convertido pelo validate.
 type eventRequest struct {
 	Title       string `json:"title"`
@@ -111,6 +112,85 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		items = append(items, toResponse(row))
 	}
 	writeJSON(w, http.StatusOK, map[string][]eventResponse{"items": items})
+}
+
+// Update troca os campos do evento (os mesmos do criar). O criador ou um moderador.
+func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
+	userID, id, ok := h.organizerOf(w, r)
+	if !ok {
+		return
+	}
+	req, ok := readEvent(w, r)
+	if !ok {
+		return
+	}
+	row, err := h.q.UpdateEvent(r.Context(), UpdateEventParams{
+		ID:          id,
+		Viewer:      userID,
+		Title:       req.Title,
+		Description: req.Description,
+		StartsAt:    req.startsAt,
+		Location:    req.Location,
+	})
+	if errors.Is(err, pgx.ErrNoRows) { // apagado entre o organizerOf e aqui
+		writeJSON(w, http.StatusNotFound, errorResponse{Error: "not_found"})
+		return
+	}
+	if err != nil {
+		internalError(w, "update event", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, toResponse(ListEventsRow(row)))
+}
+
+// Delete apaga o evento de vez, e a lista de presença vai junto (ON DELETE CASCADE). O criador ou um moderador.
+func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
+	_, id, ok := h.organizerOf(w, r)
+	if !ok {
+		return
+	}
+	if err := h.q.DeleteEvent(r.Context(), id); err != nil {
+		internalError(w, "delete event", err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// organizerOf devolve quem chama e o id do evento da rota quando quem chama é o criador dele ou um moderador.
+// Senão já responde 401 (sem sessão), 404 (evento não existe) ou 403 (nem criador nem moderador) e devolve ok = false.
+func (h *Handler) organizerOf(w http.ResponseWriter, r *http.Request) (userID, id int64, ok bool) {
+	userID, ok = h.loggedIn(w, r)
+	if !ok {
+		return 0, 0, false
+	}
+	id, ok = pathID(r)
+	if !ok {
+		writeJSON(w, http.StatusNotFound, errorResponse{Error: "not_found"})
+		return 0, 0, false
+	}
+	authorID, err := h.q.GetEventAuthor(r.Context(), id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		writeJSON(w, http.StatusNotFound, errorResponse{Error: "not_found"})
+		return 0, 0, false
+	}
+	if err != nil {
+		internalError(w, "get event author", err)
+		return 0, 0, false
+	}
+	if authorID == userID {
+		return userID, id, true
+	}
+	// Só quem não é o criador custa a segunda consulta.
+	mod, err := h.q.IsModerator(r.Context(), userID)
+	if err != nil {
+		internalError(w, "is moderator", err)
+		return 0, 0, false
+	}
+	if !mod {
+		writeJSON(w, http.StatusForbidden, errorResponse{Error: "not_author"})
+		return 0, 0, false
+	}
+	return userID, id, true
 }
 
 // Get devolve um evento, para todo mundo; também os que já passaram. Quem está logado recebe a lista de quem vai.

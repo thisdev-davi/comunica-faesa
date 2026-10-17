@@ -26,7 +26,6 @@ Duas pernas que se apoiam: o mural de ideias e a aba de eventos.
 **Mural de ideias**
 
 - O aluno posta uma ideia com curso, categoria, descrição, quantas pessoas precisa e habilidades procuradas.
-- Os outros podem comentar.
 - Botão "quero participar", sem aprovação — o espírito é conhecer gente nova, então a lista de interessados fica aberta.
 - O autor vê a lista de interessados numa aba e chama a galera pelo Discord.
 
@@ -55,6 +54,7 @@ Duas pernas que se apoiam: o mural de ideias e a aba de eventos.
 
 ## Próximo passo — logo após o MVP
 
+- Comentários nas ideias. Saíram do MVP em 17/10/2026: a conversa já vive no Discord; voltam se o uso real pedir.
 - Link do repositório na vitrine de concluídos — transforma a vitrine em portfólio para entrevistas.
 - "Tô disponível": para o aluno que não tem ideia mas quer entrar em algum projeto (o inverso do mural).
 - Tags livres na ideia (ex.: jogos, IA, mobile), além de curso e categoria.

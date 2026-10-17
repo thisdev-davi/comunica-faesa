@@ -97,7 +97,7 @@ Regras de interface do front: visual, padrões de tela, texto e acessibilidade. 
 - **Cabeçalho:** a barra e o conteúdo dela vão de ponta a ponta, com recuo `space-6` (`space-4` no celular): o logo fica colado à esquerda da tela e o usuário à direita, fora da coluna do conteúdo. A foto e o nome do usuário são uma pílula que leva ao próprio perfil ("Meu perfil" para o leitor de tela); no celular, só a foto.
 - **Navegação:** links no cabeçalho, colados no logo ("Mural", "Eventos", "Concluídos" e, só para quem está logado, "Minhas ideias"), com `aria-current="page"` na página atual, que ganha cor `primary` e fundo `primary-soft` (nunca só a cor). Links e botões da barra são pílulas com o mesmo hover: texto `ink` sobre `surface-sunken`, que não se confunde com a página atual. Barra no topo, sem menu lateral nem hambúrguer: no celular (até 600px), os links descem para uma segunda linha da barra.
 - **Topo do mural:** título e texto de apoio à esquerda; a ação da página ("Postar ideia") à direita, alinhada pela base. No celular, a ação desce.
-- **Voltar:** páginas internas começam com o link "Voltar ao mural". A página de editar volta para a ideia ("Voltar à ideia"), e a de criar evento volta à agenda ("Voltar aos eventos").
+- **Voltar:** páginas internas começam com o link "Voltar ao mural". A página de editar volta para a ideia ("Voltar à ideia") ou para o evento ("Voltar ao evento"), e as de criar evento e do evento voltam à agenda ("Voltar aos eventos").
 
 ### Cards do mural
 
@@ -135,9 +135,11 @@ Regras de interface do front: visual, padrões de tela, texto e acessibilidade. 
   - para quem está logado, o "Vou participar" (pílula `accent` com a mão levantada), que vira "Presença confirmada" (pílula `joined` com `check`, `aria-pressed`). É o mesmo `JoinButton` do "Quero participar", com outra URL e outros rótulos;
   - para o visitante, o convite "Entre com o Discord para confirmar presença e ver quem vai.";
   - evento que já passou (o dia dele acabou, no horário de Brasília): sem botão, com "Este evento já aconteceu.";
+  - o criador vê o painel "Seu evento", e o moderador que não é o criador vê o painel "Moderação" (com a frase "Você pode editar e apagar este evento porque tem o cargo de moderação no Discord."). Os dois têm "Editar evento" (`secondary`) e "Apagar evento" (`danger`), que confirma na caixa nativa e volta para `/eventos`. Valem também no evento que já passou;
   - embaixo, só para quem está logado, a seção "Quem vai (N)": foto e nome de cada pessoa, em ordem de chegada, levando ao perfil. Sem "Chamar no Discord";
   - evento inexistente mostra "Evento não encontrado".
 - **Criar evento (`/eventos/novo`):** só para quem está logado e tem curso. Coluna dos formulários, com título, descrição, "Data e hora" (`<input type="datetime-local">` nativo, sem `min`: os erros são os da API) e local lado a lado (empilhados no celular). O texto de apoio avisa que o horário é o de Brasília. Depois de criar, vai para a página do evento novo.
+- **Editar evento (`/eventos/<id>/editar`):** o formulário do criar, já preenchido (a data e a hora no horário de Brasília), com "Editar evento" e "Salvar alterações". Só o criador ou um moderador; os outros vão para a página do evento. Começa com "Voltar ao evento" e, depois de salvar, volta para lá.
 - **Concluídos (`/concluidas`):** a vitrine, com a mesma grade do mural e as concluídas mais recentes primeiro. O visitante vê a prévia de 3 e o convite para entrar. É onde o build in public vai entrar.
 - **Minhas ideias (`/minhas-ideias`):** só para quem está logado. Todas as ideias do aluno, em qualquer status, na mesma grade do mural, com "Postar ideia" no topo. Os controles ficam na página de cada ideia.
 - **Página da ideia (`/ideias/<id>`):**

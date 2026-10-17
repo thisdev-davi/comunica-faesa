@@ -5,6 +5,8 @@ Primeira fatia da fase de eventos (decisões na seção [Eventos do PRD](../PRD.
 Mudou o contrato? Atualiza este arquivo **antes** do código.
 
 > **Atualizado pela [fatia 14](fatia-14-presenca-em-eventos.md):** todo evento ganha `attendee_count` e `going`; o card leva à página do evento (`/eventos/<id>`), e criar evento vai para a página dele.
+>
+> **Atualizado pela [fatia 16](fatia-16-editar-e-apagar-evento.md):** o criador e o moderador editam (`PUT /api/events/{id}`) e apagam (`DELETE /api/events/{id}`) o evento.
 
 ## Fora desta fatia (de propósito)
 

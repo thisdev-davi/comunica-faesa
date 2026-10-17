@@ -1,5 +1,4 @@
-import { cookies } from "next/headers";
-import { notFound, redirect, unstable_rethrow } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Avatar } from "../../components/Avatar";
@@ -7,27 +6,24 @@ import { EventCard } from "../../components/EventCard";
 import { JoinButton } from "../../components/JoinButton";
 import { StatePanel } from "../../components/StatePanel";
 import type { Attendee, CommunityEvent } from "../../events";
-import { API_URL } from "../../ideas";
 import { getMe } from "../../me";
+import { EventPanel } from "./event-panel";
+import { getEvent } from "./get-event";
 import styles from "../../ideias/[id]/ideia.module.css";
 
 // O dia (AAAA-MM-DD) no horário de Brasília: o evento sai da agenda e para de receber presença quando o dia dele acaba,
 // a mesma regra da API (docs/contratos/fatia-14-presenca-em-eventos.md).
 const day = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(d);
 
-// Página do evento, para todo mundo, como a agenda. Roda no servidor e repassa o cookie: só com ele a API manda
-// `going` e a lista de quem vai. Logado sem curso ainda não terminou o cadastro: vai para lá antes.
+// Página do evento, para todo mundo, como a agenda. Roda no servidor e chama o Go direto (getEvent).
+// Logado sem curso ainda não terminou o cadastro: vai para lá antes.
 async function EventDetail({ params }: { params: PageProps<"/eventos/[id]">["params"] }) {
   const me = await getMe();
   if (me && !me.course) redirect("/cadastro");
   const { id } = await params;
   let event: CommunityEvent;
   try {
-    const cookie = (await cookies()).toString();
-    const res = await fetch(`${API_URL}/api/events/${encodeURIComponent(id)}`, { headers: { cookie } });
-    if (res.status === 404) notFound(); // também para id inválido (abc, 0): a API responde 404
-    if (!res.ok) throw new Error(`status ${res.status}`);
-    event = await res.json();
+    event = await getEvent(id);
   } catch (err) {
     unstable_rethrow(err); // deixa passar o notFound e os erros internos do Next
     console.error("buscar evento:", err);
@@ -38,6 +34,7 @@ async function EventDetail({ params }: { params: PageProps<"/eventos/[id]">["par
     );
   }
   const past = day(new Date(event.starts_at)) < day(new Date());
+  const mine = me?.id === event.author.id;
   return (
     <>
       <EventCard
@@ -55,6 +52,8 @@ async function EventDetail({ params }: { params: PageProps<"/eventos/[id]">["par
           <Link href="/login">Entre com o Discord</Link> para confirmar presença e ver quem vai.
         </p>
       )}
+      {/* O criador e o moderador editam e apagam (fatia 16); a API confere de novo. */}
+      {(mine || me?.is_moderator) && <EventPanel eventId={event.id} mine={mine} />}
       {event.attendees && <Attendees people={event.attendees} past={past} />}
     </>
   );

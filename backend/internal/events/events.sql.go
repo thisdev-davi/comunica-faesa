@@ -62,7 +62,7 @@ type CreateEventRow struct {
 	Going           bool
 }
 
-// Create, List e Get devolvem as mesmas colunas, na mesma ordem: assim as structs geradas são conversíveis entre si.
+// Create, List, Get e Update devolvem as mesmas colunas, na mesma ordem: assim as structs geradas são conversíveis entre si.
 // attendee_count e going dizem quantos confirmaram presença e se quem pede (viewer) é um deles; viewer 0 = visitante.
 // "De hoje em diante" é sempre no horário de Brasília: o evento de hoje fica aberto até o fim do dia, mesmo depois de começar.
 // Evento recém-criado ainda não tem confirmados: as duas colunas saem fixas.
@@ -89,6 +89,16 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (Creat
 		&i.Going,
 	)
 	return i, err
+}
+
+const deleteEvent = `-- name: DeleteEvent :exec
+DELETE FROM events WHERE id = $1
+`
+
+// A lista de presença vai junto (ON DELETE CASCADE).
+func (q *Queries) DeleteEvent(ctx context.Context, id int64) error {
+	_, err := q.db.Exec(ctx, deleteEvent, id)
+	return err
 }
 
 const getEvent = `-- name: GetEvent :one
@@ -138,6 +148,29 @@ func (q *Queries) GetEvent(ctx context.Context, arg GetEventParams) (GetEventRow
 		&i.Going,
 	)
 	return i, err
+}
+
+const getEventAuthor = `-- name: GetEventAuthor :one
+SELECT author_id FROM events WHERE id = $1
+`
+
+func (q *Queries) GetEventAuthor(ctx context.Context, id int64) (int64, error) {
+	row := q.db.QueryRow(ctx, getEventAuthor, id)
+	var author_id int64
+	err := row.Scan(&author_id)
+	return author_id, err
+}
+
+const isModerator = `-- name: IsModerator :one
+SELECT is_moderator FROM users WHERE id = $1
+`
+
+// O moderador edita e apaga qualquer evento (docs/contratos/fatia-16-editar-e-apagar-evento.md).
+func (q *Queries) IsModerator(ctx context.Context, id int64) (bool, error) {
+	row := q.db.QueryRow(ctx, isModerator, id)
+	var is_moderator bool
+	err := row.Scan(&is_moderator)
+	return is_moderator, err
 }
 
 const isUpcoming = `-- name: IsUpcoming :one
@@ -257,4 +290,69 @@ type RemoveAttendeeParams struct {
 func (q *Queries) RemoveAttendee(ctx context.Context, arg RemoveAttendeeParams) error {
 	_, err := q.db.Exec(ctx, removeAttendee, arg.EventID, arg.UserID)
 	return err
+}
+
+const updateEvent = `-- name: UpdateEvent :one
+WITH e AS (
+    UPDATE events
+    SET title = $2, description = $3, starts_at = $4, location = $5
+    WHERE events.id = $6
+    RETURNING id, author_id, title, description, starts_at, location, created_at
+)
+SELECT e.id, e.title, e.description, e.starts_at, e.location, e.created_at,
+       u.id AS author_id, u.name AS author_name, u.avatar_url AS author_avatar_url,
+       (SELECT count(*) FROM event_attendees a WHERE a.event_id = e.id) AS attendee_count,
+       EXISTS (SELECT 1 FROM event_attendees a WHERE a.event_id = e.id AND a.user_id = $1) AS going
+FROM e
+JOIN users u ON u.id = e.author_id
+`
+
+type UpdateEventParams struct {
+	Viewer      int64
+	Title       string
+	Description string
+	StartsAt    time.Time
+	Location    string
+	ID          int64
+}
+
+type UpdateEventRow struct {
+	ID              int64
+	Title           string
+	Description     string
+	StartsAt        time.Time
+	Location        string
+	CreatedAt       time.Time
+	AuthorID        int64
+	AuthorName      string
+	AuthorAvatarUrl *string
+	AttendeeCount   int64
+	Going           bool
+}
+
+// Troca os campos do criar; autor, data de criação e a lista de presença não mudam. viewer é quem edita.
+func (q *Queries) UpdateEvent(ctx context.Context, arg UpdateEventParams) (UpdateEventRow, error) {
+	row := q.db.QueryRow(ctx, updateEvent,
+		arg.Viewer,
+		arg.Title,
+		arg.Description,
+		arg.StartsAt,
+		arg.Location,
+		arg.ID,
+	)
+	var i UpdateEventRow
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.StartsAt,
+		&i.Location,
+		&i.CreatedAt,
+		&i.AuthorID,
+		&i.AuthorName,
+		&i.AuthorAvatarUrl,
+		&i.AttendeeCount,
+		&i.Going,
+	)
+	return i, err
 }

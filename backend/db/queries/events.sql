@@ -1,4 +1,4 @@
--- Create, List e Get devolvem as mesmas colunas, na mesma ordem: assim as structs geradas são conversíveis entre si.
+-- Create, List, Get e Update devolvem as mesmas colunas, na mesma ordem: assim as structs geradas são conversíveis entre si.
 -- attendee_count e going dizem quantos confirmaram presença e se quem pede (viewer) é um deles; viewer 0 = visitante.
 -- "De hoje em diante" é sempre no horário de Brasília: o evento de hoje fica aberto até o fim do dia, mesmo depois de começar.
 
@@ -55,3 +55,29 @@ FROM event_attendees a
 JOIN users u ON u.id = a.user_id
 WHERE a.event_id = $1
 ORDER BY a.created_at, a.user_id;
+
+-- name: UpdateEvent :one
+-- Troca os campos do criar; autor, data de criação e a lista de presença não mudam. viewer é quem edita.
+WITH e AS (
+    UPDATE events
+    SET title = sqlc.arg('title'), description = sqlc.arg('description'), starts_at = sqlc.arg('starts_at'), location = sqlc.arg('location')
+    WHERE events.id = sqlc.arg('id')
+    RETURNING *
+)
+SELECT e.id, e.title, e.description, e.starts_at, e.location, e.created_at,
+       u.id AS author_id, u.name AS author_name, u.avatar_url AS author_avatar_url,
+       (SELECT count(*) FROM event_attendees a WHERE a.event_id = e.id) AS attendee_count,
+       EXISTS (SELECT 1 FROM event_attendees a WHERE a.event_id = e.id AND a.user_id = sqlc.arg('viewer')) AS going
+FROM e
+JOIN users u ON u.id = e.author_id;
+
+-- name: DeleteEvent :exec
+-- A lista de presença vai junto (ON DELETE CASCADE).
+DELETE FROM events WHERE id = $1;
+
+-- name: GetEventAuthor :one
+SELECT author_id FROM events WHERE id = $1;
+
+-- name: IsModerator :one
+-- O moderador edita e apaga qualquer evento (docs/contratos/fatia-16-editar-e-apagar-evento.md).
+SELECT is_moderator FROM users WHERE id = $1;
