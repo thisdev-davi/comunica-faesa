@@ -318,15 +318,21 @@ SELECT i.id, i.title, i.description, i.course, i.category, i.slots, i.status, i.
               WHERE n.idea_id = i.id AND $1 <> 0 ORDER BY n.created_at, n.user_id LIMIT 8) f)::json AS interest_faces
 FROM ideas i
 JOIN users u ON u.id = i.author_id
-WHERE (i.status = 'done') = $2::bool
+WHERE CASE WHEN $2::text IS NULL THEN i.status <> 'done' ELSE i.status = $2 END
+  AND i.course = coalesce($3, i.course)
+  AND i.category = coalesce($4, i.category)
+  AND ($5::text IS NULL OR $5 = ANY (i.skills))
 ORDER BY i.done_at DESC NULLS LAST, i.created_at DESC, i.id DESC
-LIMIT $3
+LIMIT $6
 `
 
 type ListIdeasParams struct {
-	Viewer int64
-	Done   bool
-	Max    *int32
+	Viewer   int64
+	Status   *string
+	Course   *string
+	Category *string
+	Skill    *string
+	Max      *int32
 }
 
 type ListIdeasRow struct {
@@ -348,11 +354,19 @@ type ListIdeasRow struct {
 	InterestFaces   []byte
 }
 
-// done escolhe a lista: false é o mural (abertas e em andamento), true é a vitrine (concluídas).
+// status NULL é o mural (abertas e em andamento); 'done' é a vitrine; 'open' e 'in_progress' filtram o mural.
+// Os outros filtros NULL não filtram (docs/contratos/fatia-17-filtros-do-mural.md).
 // A vitrine ordena pela conclusão; no mural done_at é sempre NULL, e a ordem cai na data de postagem.
 // max NULL = sem limite (LIMIT NULL é o mesmo que não ter LIMIT); o visitante recebe só uma prévia.
 func (q *Queries) ListIdeas(ctx context.Context, arg ListIdeasParams) ([]ListIdeasRow, error) {
-	rows, err := q.db.Query(ctx, listIdeas, arg.Viewer, arg.Done, arg.Max)
+	rows, err := q.db.Query(ctx, listIdeas,
+		arg.Viewer,
+		arg.Status,
+		arg.Course,
+		arg.Category,
+		arg.Skill,
+		arg.Max,
+	)
 	if err != nil {
 		return nil, err
 	}

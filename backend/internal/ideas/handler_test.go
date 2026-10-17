@@ -572,11 +572,83 @@ func TestMuralAndShowcase(t *testing.T) {
 			t.Errorf("%s: %v, quer %v", tc.name, got, tc.want)
 		}
 	}
+}
 
-	rec := httptest.NewRecorder()
-	author.List(rec, httptest.NewRequest(http.MethodGet, "/api/ideas?status=open", nil))
-	if got := decode[errorResponse](t, rec); rec.Code != 400 || got.Error != "validation_failed" || got.Fields["status"] == "" {
-		t.Errorf("status inválido: %d (%s), quer 400 com fields.status", rec.Code, rec.Body)
+// Filtro com valor fora da lista para antes do banco, inclusive para o visitante.
+func TestListRejectsBadFilter(t *testing.T) {
+	for _, q := range []string{"status=closed", "course=med", "category=culinaria", "skill=culinaria"} {
+		for _, id := range []int64{0, 1} {
+			rec := httptest.NewRecorder()
+			NewHandler(nil, loggedAs(id)).List(rec, httptest.NewRequest(http.MethodGet, "/api/ideas?"+q, nil))
+			name, _, _ := strings.Cut(q, "=")
+			if got := decode[errorResponse](t, rec); rec.Code != 400 || got.Error != "validation_failed" || got.Fields[name] != "valor inválido" {
+				t.Errorf("?%s (usuário %d): %d (%s), quer 400 em fields.%s", q, id, rec.Code, rec.Body, name)
+			}
+		}
+	}
+}
+
+// Filtros do mural contra Postgres real: cada um, a soma, o vazio e o visitante, que só vê a prévia.
+func TestListFilters(t *testing.T) {
+	pool := testDB(t)
+	var authorID int64
+	if err := pool.QueryRow(context.Background(), `INSERT INTO users (name) VALUES ('Autora de Teste') RETURNING id`).Scan(&authorID); err != nil {
+		t.Fatal(err)
+	}
+	author, visitor := NewHandler(pool, loggedAs(authorID)), NewHandler(pool, loggedAs(0))
+	post := func(course, category, skills string) int64 {
+		t.Helper()
+		body := `{"title":"Ideia","description":"x","course":"` + course + `","category":"` + category + `","slots":2,"skills":[` + skills + `]}`
+		rec := do(t, author.Create, http.MethodPost, body)
+		if rec.Code != 201 {
+			t.Fatalf("POST: %d (%s)", rec.Code, rec.Body)
+		}
+		return decode[ideaResponse](t, rec).ID
+	}
+	a := post("cc", "web", `"frontend","backend"`)
+	b := post("cc", "mobile", `"backend"`)
+	c := post("ads", "web", ``)
+	d := post("eng", "web", `"backend"`)
+	e := post("cc", "web", `"backend"`)
+	for id, status := range map[int64]string{c: "in_progress", e: "done"} {
+		if rec := doIDBody(t, author.SetStatus, http.MethodPut, strconv.FormatInt(id, 10), `{"status":"`+status+`"}`); rec.Code != 204 {
+			t.Fatalf("PUT status: %d (%s)", rec.Code, rec.Body)
+		}
+	}
+
+	list := func(h *Handler, query string) []int64 {
+		t.Helper()
+		rec := httptest.NewRecorder()
+		h.List(rec, httptest.NewRequest(http.MethodGet, "/api/ideas?"+query, nil))
+		if rec.Code != 200 {
+			t.Fatalf("GET ?%s: %d (%s)", query, rec.Code, rec.Body)
+		}
+		got := []int64{}
+		for _, it := range decode[struct{ Items []ideaResponse }](t, rec).Items {
+			got = append(got, it.ID)
+		}
+		return got
+	}
+	for _, tc := range []struct {
+		name string
+		h    *Handler
+		q    string
+		want []int64
+	}{
+		{"vazio é sem filtro", author, "status=&course=&category=&skill=", []int64{d, c, b, a}},
+		{"status", author, "status=in_progress", []int64{c}},
+		{"curso", author, "course=cc", []int64{b, a}},
+		{"categoria", author, "category=web", []int64{d, c, a}},
+		{"habilidade", author, "skill=backend", []int64{d, b, a}},
+		{"a soma", author, "course=cc&category=web&skill=backend", []int64{a}},
+		{"vitrine com filtro", author, "status=done&course=cc", []int64{e}},
+		{"nada bate", author, "skill=design", []int64{}},
+		{"visitante ignora os filtros", visitor, "course=eng&status=in_progress", []int64{d, c, b}},
+		{"visitante na vitrine", visitor, "status=done&course=ads", []int64{e}},
+	} {
+		if got := list(tc.h, tc.q); !reflect.DeepEqual(got, tc.want) {
+			t.Errorf("%s: %v, quer %v", tc.name, got, tc.want)
+		}
 	}
 }
 

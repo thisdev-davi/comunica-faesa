@@ -147,6 +147,21 @@ Decidida em 16 de outubro de 2026. Quatro fatias, nesta ordem, cada uma com o pr
 
 **Fica para depois:** seção de eventos passados, limite de vagas, eventos no perfil, próximo evento em destaque no mural, segundo nível de cargo (Admin com poder próprio).
 
+## Fase de descoberta
+
+Decidida em 17 de outubro de 2026 (item 6 das funcionalidades). Duas fatias, cada uma com o próprio contrato e um PR com base na `main`:
+
+| fatia | conteúdo | situação |
+|---|---|---|
+| 17 — filtros do mural | status, curso, categoria e habilidade no `GET /api/ideas` e no mural, só para quem está logado | feita ([contrato](contratos/fatia-17-filtros-do-mural.md), PR #34) |
+| 18 — busca por texto | busca no título e na descrição | **próxima**: começa pelo `grill-me` (`ILIKE` ou busca do Postgres, onde fica a caixa) |
+
+- Um valor por filtro, e eles se somam. O filtro fica na URL, num formulário GET nativo.
+- O visitante não filtra: a API ignora os filtros dele, para a prévia continuar sendo de 3.
+- Limite conhecido: o mural devolve todas as ideias, sem paginação. Entra quando passar de umas centenas.
+
+**Fica para depois:** filtros na vitrine (a API já aceita), mais de um valor por filtro, atalho "combinam com minhas habilidades".
+
 ## Regras de negócio e fora de escopo
 
 **Regras principais**

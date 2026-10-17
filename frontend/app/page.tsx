@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ButtonLink } from "./components/Button";
+import { IdeaFilters, pickFilters } from "./idea-filters";
 import { IdeaList, Skeleton } from "./idea-list";
 import { getMe } from "./me";
 import styles from "./mural.module.css";
@@ -32,7 +33,36 @@ async function PostAction() {
   );
 }
 
-export default function Home() {
+// Filtros e lista dependem da URL e de quem está logado: ficam juntos dentro do Suspense do esqueleto.
+// O visitante não vê a barra, e a API ignora os filtros dele (só vê a prévia).
+async function Mural({ searchParams }: Pick<PageProps<"/">, "searchParams">) {
+  const filters = pickFilters(await searchParams);
+  const me = await getMe();
+  const filtered = me && filters.size > 0;
+  return (
+    <>
+      {me && <IdeaFilters values={filters} />}
+      {/* Concluídas ficam na vitrine (/concluidas): o mural traz só as abertas e em andamento. */}
+      <IdeaList
+        path={`/api/ideas?${filters}`}
+        errorTitle="Não foi possível carregar o mural"
+        emptyTitle={filtered ? "Nenhuma ideia com esses filtros" : "Nenhuma ideia ainda"}
+        emptyText={
+          filtered ? (
+            <>
+              Tire um filtro ou <Link href="/">limpe todos</Link>.
+            </>
+          ) : (
+            "Que tal postar a primeira? Conte o problema e quem você procura."
+          )
+        }
+        invite="para ver o mural todo."
+      />
+    </>
+  );
+}
+
+export default function Home({ searchParams }: PageProps<"/">) {
   return (
     <main id="conteudo" className={styles.page}>
       {/* Título e texto à esquerda, "Postar ideia" à direita: as bordas batem com as da grade de cards. */}
@@ -49,14 +79,7 @@ export default function Home() {
       </div>
       <h2 className="sr-only">Ideias</h2>
       <Suspense fallback={<Skeleton />}>
-        {/* Concluídas ficam na vitrine (/concluidas): o mural traz só as abertas e em andamento. */}
-        <IdeaList
-          path="/api/ideas"
-          errorTitle="Não foi possível carregar o mural"
-          emptyTitle="Nenhuma ideia ainda"
-          emptyText="Que tal postar a primeira? Conte o problema e quem você procura."
-          invite="para ver o mural todo."
-        />
+        <Mural searchParams={searchParams} />
       </Suspense>
     </main>
   );

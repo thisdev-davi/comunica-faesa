@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect, unstable_rethrow } from "next/navigation";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { IdeaCard } from "./components/IdeaCard";
 import { StatePanel } from "./components/StatePanel";
 import { API_URL, type Idea } from "./ideas";
@@ -22,7 +23,7 @@ export async function IdeaList({
   path: string;
   errorTitle: string;
   emptyTitle: string;
-  emptyText: string;
+  emptyText: ReactNode;
   invite?: string; // complemento do "Entre com Discord" para o visitante, que só vê a prévia
 }) {
   const me = await getMe();

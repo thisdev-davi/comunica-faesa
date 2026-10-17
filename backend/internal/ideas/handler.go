@@ -200,28 +200,35 @@ func (h *Handler) SetStatus(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// List devolve o mural (abertas e em andamento) ou, com ?status=done, a vitrine de concluídas.
-// Tudo para quem está logado, só as primeiras para visitante.
+// List devolve o mural (abertas e em andamento) ou, com ?status=done, a vitrine de concluídas,
+// com os filtros da fatia 17. Tudo para quem está logado, só as primeiras para visitante.
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	userID, err := h.userID(r)
 	if err != nil {
 		internalError(w, "session", err)
 		return
 	}
-	var done bool
-	switch r.URL.Query().Get("status") {
-	case "": // o mural; em Go o case não cai no próximo, então vazio é "não faz nada"
-	case "done":
-		done = true
-	default:
-		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "validation_failed", Fields: map[string]string{"status": "valor inválido"}})
+	fields := map[string]string{}
+	p := ListIdeasParams{
+		Viewer:   userID,
+		Status:   filter(r, fields, "status", func(v string) bool { return statuses[v] }),
+		Course:   filter(r, fields, "course", func(v string) bool { return Courses[v] }),
+		Category: filter(r, fields, "category", func(v string) bool { return categories[v] }),
+		Skill:    filter(r, fields, "skill", func(v string) bool { return slices.Contains(Skills, v) }),
+	}
+	if len(fields) > 0 {
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "validation_failed", Fields: fields})
 		return
 	}
-	var max *int32 // nil vira NULL no SQL: sem limite
 	if userID == 0 {
-		max = new(int32(previewSize)) // Go 1.26+: new aceita um valor e devolve o ponteiro para uma cópia dele
+		// Filtrando, o visitante veria mais que a prévia: para ele só a vitrine vale.
+		if p.Status != nil && *p.Status != "done" {
+			p.Status = nil
+		}
+		p.Course, p.Category, p.Skill = nil, nil, nil
+		p.Max = new(int32(previewSize)) // Go 1.26+: new aceita um valor e devolve o ponteiro para uma cópia dele
 	}
-	rows, err := h.q.ListIdeas(r.Context(), ListIdeasParams{Viewer: userID, Done: done, Max: max})
+	rows, err := h.q.ListIdeas(r.Context(), p)
 	if err != nil {
 		internalError(w, "list ideas", err)
 		return
@@ -495,6 +502,20 @@ func (req *statusRequest) validate() map[string]string {
 	fields := map[string]string{}
 	CheckOption(fields, "status", req.Status, statuses)
 	return fields
+}
+
+// filter lê um filtro da query do GET /api/ideas: vazio é "sem filtro" (nil, que vira NULL no SQL);
+// valor que valid recusa vai para fields. Devolve o endereço de v: em Go cada chamada tem o seu v, então é seguro.
+func filter(r *http.Request, fields map[string]string, name string, valid func(string) bool) *string {
+	v := r.URL.Query().Get(name)
+	if v == "" {
+		return nil
+	}
+	if !valid(v) {
+		fields[name] = "valor inválido"
+		return nil
+	}
+	return &v
 }
 
 // CheckText grava em fields o erro de um texto obrigatório fora do limite de caracteres; exportada para eventos usar as mesmas mensagens.

@@ -129,6 +129,7 @@ Regras de interface do front: visual, padrões de tela, texto e acessibilidade. 
   - só ideias abertas e em andamento; as concluídas vão para a vitrine;
   - o visitante vê a prévia de 3 ideias e o convite para entrar;
   - quem está logado vê tudo e o botão "Postar ideia";
+  - quem está logado vê os filtros entre o topo e a grade: um `<form method="get" role="search">` com os `Select` "Status", "Curso", "Categoria" e "Habilidade" (primeira opção "Todos" ou "Todas"), o botão "Filtrar" (`secondary`) e, com filtro ativo, "Limpar filtros" (`ghost`). Mudar um select não recarrega a página: o aluno escolhe e aperta "Filtrar". Uma linha só no desktop; 2 colunas abaixo de 900px, também no celular (empilhados, empurrariam os cards para baixo da dobra). Vazio com filtro: "Nenhuma ideia com esses filtros", com o link "limpe todos";
   - logado sem curso vai para `/cadastro`.
 - **Eventos (`/eventos`):** a agenda, de hoje em diante e do mais próximo, para todo mundo (o visitante vê a lista inteira e o convite para entrar e criar). Topo como o do mural, com "Criar evento" à direita só para quem está logado. Vazio: "Nenhum evento marcado". Logado sem curso vai para `/cadastro`.
 - **Página do evento (`/eventos/<id>`):** para todo mundo. "Voltar aos eventos", o card `full` e:
