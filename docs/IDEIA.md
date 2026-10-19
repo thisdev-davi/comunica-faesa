@@ -17,6 +17,8 @@ A plataforma ataca duas dores centrais:
 
 ## MVP — o coração
 
+Concluído em 19 de outubro de 2026 (ver PRD, "MVP concluído").
+
 Duas pernas que se apoiam: o mural de ideias e a aba de eventos.
 
 **Login**
@@ -58,6 +60,9 @@ Duas pernas que se apoiam: o mural de ideias e a aba de eventos.
 - Link do repositório na vitrine de concluídos — transforma a vitrine em portfólio para entrevistas.
 - "Tô disponível": para o aluno que não tem ideia mas quer entrar em algum projeto (o inverso do mural).
 - Tags livres na ideia (ex.: jogos, IA, mobile), além de curso e categoria.
+- O que ficou de fora das fases do MVP (detalhes no PRD):
+  - Descoberta: filtros e busca na vitrine (a API já aceita), mais de um valor por filtro, atalho "combinam com minhas habilidades", paginação do mural (quando passar de umas centenas de ideias).
+  - Eventos: seção de eventos passados, limite de vagas, eventos no perfil, próximo evento em destaque no mural, segundo nível de cargo (Admin com poder próprio).
 
 ## Futuro — junto com o professor ou vira rede social
 

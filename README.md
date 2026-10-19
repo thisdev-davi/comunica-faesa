@@ -9,7 +9,7 @@ A conversa dos grupos acontece no Discord da comunidade; a plataforma não tem c
 
 ## Status
 
-Em desenvolvimento, construído em fatias verticais (tela → API → banco).
+**MVP concluído** em 19 de outubro de 2026, construído em fatias verticais (tela → API → banco). A próxima fase sai da fila do [IDEIA](docs/IDEIA.md).
 
 - [x] Fatia 1, back: postar e listar ideias (`POST` / `GET /api/ideas`)
 - [x] Fatia 1, front: mural e formulário de postar ideia
@@ -30,6 +30,8 @@ Em desenvolvimento, construído em fatias verticais (tela → API → banco).
 - [x] Fatia 16: o criador e o moderador editam e apagam o evento
 - [x] Fatia 17: filtros do mural (status, curso, categoria e habilidade), para quem está logado
 - [x] Fatia 18: busca por texto no título e na descrição, sem diferenciar maiúscula nem acento
+
+Depois do fechamento, uma revisão do código virou correções sem funcionalidade nova: cookies `__Host-` e headers de segurança (PR #37), regras de participação e curso obrigatório na API (PR #38). A habilidade "Maratona de Programação" entrou no catálogo (PR #39).
 
 Comentários nas ideias saíram do MVP e foram para a fila ([IDEIA](docs/IDEIA.md)).
 

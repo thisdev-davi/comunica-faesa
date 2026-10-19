@@ -150,7 +150,7 @@ Decidida em 16 de outubro de 2026. Quatro fatias, nesta ordem, cada uma com o pr
 - O moderador edita e apaga qualquer evento e apaga qualquer ideia (não edita ideia alheia nem troca o status dela).
 - O front mostra os botões pelo `is_moderator` do `/api/me`; quem decide de verdade é a API.
 
-**Fica para depois:** seção de eventos passados, limite de vagas, eventos no perfil, próximo evento em destaque no mural, segundo nível de cargo (Admin com poder próprio).
+**Fica para depois:** seção de eventos passados, limite de vagas, eventos no perfil, próximo evento em destaque no mural, segundo nível de cargo (Admin com poder próprio). Estão na fila do [IDEIA](IDEIA.md).
 
 ## Fase de descoberta
 
@@ -165,7 +165,15 @@ Decidida em 17 de outubro de 2026 (item 6 das funcionalidades) e concluída em 1
 - O visitante não filtra nem busca: a API ignora os filtros e o `q` dele, para a prévia continuar sendo de 3.
 - Limite conhecido: o mural devolve todas as ideias, sem paginação. Entra quando passar de umas centenas.
 
-**Fica para depois:** filtros e busca na vitrine (a API já aceita), mais de um valor por filtro, atalho "combinam com minhas habilidades".
+**Fica para depois:** filtros e busca na vitrine (a API já aceita), mais de um valor por filtro, atalho "combinam com minhas habilidades", paginação do mural. Estão na fila do [IDEIA](IDEIA.md).
+
+## MVP concluído
+
+Fechado em 19 de outubro de 2026: as sete funcionalidades do MVP estão na `main` (fatias 1 a 18), menos comentários nas ideias, que foram para a fila.
+
+- Depois do fechamento, uma revisão do código virou correções sem funcionalidade nova: cookies `__Host-` e headers de segurança (PR #37), "quero participar" e "vou participar" sem condição de corrida e curso obrigatório também na API (PR #38), e um refactor que apaga consultas repetidas. A habilidade "Maratona de Programação" entrou no catálogo (PR #39).
+- Pendência em produção: preencher `DISCORD_MOD_ROLE_IDS` no `.env` da VPS ([fase de eventos](#fase-de-eventos)). Sem isso, ninguém é moderador.
+- Nada novo entra no MVP. A próxima fase sai da fila do [IDEIA](IDEIA.md), começa pelo `grill-me` e passa pela régua de decisão.
 
 ## Regras de negócio e fora de escopo
 
