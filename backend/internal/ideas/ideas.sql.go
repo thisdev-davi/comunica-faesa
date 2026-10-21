@@ -41,7 +41,7 @@ WITH i AS (
     INSERT INTO ideas (author_id, title, description, course, category, slots, skills)
     SELECT $1, $2, $3, $4, $5, $6, $7
     FROM users WHERE id = $1 AND course IS NOT NULL
-    RETURNING id, author_id, title, description, course, category, slots, status, created_at, done_at, skills
+    RETURNING id, author_id, title, description, course, category, slots, status, created_at, done_at, skills, discord_role_id, discord_channel_id
 )
 SELECT i.id, i.title, i.description, i.course, i.category, i.slots, i.status, i.created_at, i.done_at, i.skills,
        u.id AS author_id, u.name AS author_name, u.avatar_url AS author_avatar_url,
@@ -201,6 +201,37 @@ func (q *Queries) GetIdeaAuthor(ctx context.Context, id int64) (GetIdeaAuthorRow
 	row := q.db.QueryRow(ctx, getIdeaAuthor, id)
 	var i GetIdeaAuthorRow
 	err := row.Scan(&i.AuthorID, &i.Status)
+	return i, err
+}
+
+const getIdeaCall = `-- name: GetIdeaCall :one
+SELECT i.title, i.discord_role_id, i.discord_channel_id,
+       ARRAY(SELECT u.discord_id FROM users u
+             WHERE u.discord_id IS NOT NULL
+               AND (u.id = i.author_id OR u.id IN (SELECT n.user_id FROM interests n WHERE n.idea_id = i.id))
+             ORDER BY u.id)::text[] AS members
+FROM ideas i
+WHERE i.id = $1
+`
+
+type GetIdeaCallRow struct {
+	Title            string
+	DiscordRoleID    *string
+	DiscordChannelID *string
+	Members          []string
+}
+
+// A call do grupo no Discord (docs/contratos/fatia-19-call-no-discord.md). members são os discord_id de quem recebe o cargo:
+// o autor e a lista de interessados.
+func (q *Queries) GetIdeaCall(ctx context.Context, id int64) (GetIdeaCallRow, error) {
+	row := q.db.QueryRow(ctx, getIdeaCall, id)
+	var i GetIdeaCallRow
+	err := row.Scan(
+		&i.Title,
+		&i.DiscordRoleID,
+		&i.DiscordChannelID,
+		&i.Members,
+	)
 	return i, err
 }
 
@@ -554,6 +585,34 @@ func (q *Queries) RemoveInterest(ctx context.Context, arg RemoveInterestParams) 
 	return err
 }
 
+const setIdeaChannel = `-- name: SetIdeaChannel :exec
+UPDATE ideas SET discord_channel_id = $2 WHERE id = $1
+`
+
+type SetIdeaChannelParams struct {
+	ID               int64
+	DiscordChannelID *string
+}
+
+func (q *Queries) SetIdeaChannel(ctx context.Context, arg SetIdeaChannelParams) error {
+	_, err := q.db.Exec(ctx, setIdeaChannel, arg.ID, arg.DiscordChannelID)
+	return err
+}
+
+const setIdeaRole = `-- name: SetIdeaRole :exec
+UPDATE ideas SET discord_role_id = $2 WHERE id = $1
+`
+
+type SetIdeaRoleParams struct {
+	ID            int64
+	DiscordRoleID *string
+}
+
+func (q *Queries) SetIdeaRole(ctx context.Context, arg SetIdeaRoleParams) error {
+	_, err := q.db.Exec(ctx, setIdeaRole, arg.ID, arg.DiscordRoleID)
+	return err
+}
+
 const setIdeaStatus = `-- name: SetIdeaStatus :exec
 UPDATE ideas
 SET status = $1,
@@ -576,7 +635,7 @@ const updateIdea = `-- name: UpdateIdea :one
 WITH i AS (
     UPDATE ideas SET title = $2, description = $3, course = $4, category = $5, slots = $6, skills = $7
     WHERE ideas.id = $1
-    RETURNING id, author_id, title, description, course, category, slots, status, created_at, done_at, skills
+    RETURNING id, author_id, title, description, course, category, slots, status, created_at, done_at, skills, discord_role_id, discord_channel_id
 )
 SELECT i.id, i.title, i.description, i.course, i.category, i.slots, i.status, i.created_at, i.done_at, i.skills,
        u.id AS author_id, u.name AS author_name, u.avatar_url AS author_avatar_url,

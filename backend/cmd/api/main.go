@@ -45,6 +45,14 @@ func run() error {
 	port := cmp.Or(os.Getenv("PORT"), "8090")
 	// Opcional: sem a variável, ninguém é moderador. Fields também descarta espaços e vírgulas sobrando ("1, 2,").
 	modRoles := strings.Fields(strings.ReplaceAll(os.Getenv("DISCORD_MOD_ROLE_IDS"), ",", " "))
+	// Opcional: sem token, a ideia em andamento não ganha call no Discord. Com token, a categoria é obrigatória.
+	bot := ideas.Bot{
+		Token: os.Getenv("DISCORD_BOT_TOKEN"), GuildID: guildID,
+		CategoryID: os.Getenv("DISCORD_CALLS_CATEGORY_ID"), API: "https://discord.com/api/v10",
+	}
+	if bot.Token != "" && bot.CategoryID == "" {
+		return fmt.Errorf("DISCORD_BOT_TOKEN definida sem DISCORD_CALLS_CATEGORY_ID")
+	}
 
 	// ctx é cancelado no Ctrl+C ou no SIGTERM do docker stop
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -59,14 +67,16 @@ func run() error {
 	}
 
 	a := auth.NewHandler(pool, clientID, clientSecret, redirectURL, guildID, modRoles)
+	ih := ideas.NewHandler(pool, a.UserID)
+	ih.Bot = bot
 	srv := &http.Server{
 		Addr:              ":" + port,
-		Handler:           routes(a, ideas.NewHandler(pool, a.UserID), events.NewHandler(pool, a.UserID)),
+		Handler:           routes(a, ih, events.NewHandler(pool, a.UserID)),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second, // corpo inteiro; sem isso um cliente lento segura a conexão para sempre
 		IdleTimeout:       60 * time.Second, // keep-alive parado
 	}
-	slog.Info("api no ar", "addr", srv.Addr, "cargos_de_moderacao", len(modRoles))
+	slog.Info("api no ar", "addr", srv.Addr, "cargos_de_moderacao", len(modRoles), "bot_do_discord", bot.Token != "")
 	errc := make(chan error, 1)
 	go func() { errc <- srv.ListenAndServe() }()
 	select {

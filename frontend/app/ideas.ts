@@ -20,6 +20,7 @@ export type Idea = {
   interested: boolean; // quem pede está na lista
   interest_faces: Face[]; // os 8 primeiros interessados; [] para visitante
   interests?: Interest[]; // só vem para o autor
+  call_url?: string; // fatia 19: canal do grupo no Discord, só para o autor e a lista, e só no GET de uma ideia
 };
 
 export type Face = {

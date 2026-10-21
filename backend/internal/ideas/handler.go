@@ -1,6 +1,7 @@
 package ideas
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -40,6 +41,8 @@ type Handler struct {
 	q *Queries
 	// userID diz quem está logado (0 = visitante). Recebe uma função, não o pacote auth: os testes trocam por um stub.
 	userID func(*http.Request) (int64, error)
+	// Bot cria a call do grupo no Discord; o zero (sem token) deixa desligado, como nos testes que não mexem nisso.
+	Bot Bot
 }
 
 func NewHandler(db DBTX, userID func(*http.Request) (int64, error)) *Handler {
@@ -87,6 +90,8 @@ type ideaResponse struct {
 	// Só o autor recebe a lista. omitzero (Go 1.24+) tira só o nil: para quem não é autor o campo some,
 	// e o autor sem interessados recebe [] (omitempty tiraria os dois).
 	Interests []interestResponse `json:"interests,omitzero"`
+	// Link do canal do grupo no Discord: só no GET de uma ideia, para o autor e a lista, quando o canal existe.
+	CallURL *string `json:"call_url,omitempty"`
 }
 
 // Mesmos campos, com os mesmos nomes, do ListInterestsRow gerado (por isso AvatarUrl, não AvatarURL): a conversão é direta.
@@ -180,10 +185,21 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	// Os ids da call são lidos antes: depois do DELETE, a ideia que os guarda não existe mais.
+	var call GetIdeaCallRow
+	if h.Bot.Token != "" {
+		var err error
+		if call, err = h.q.GetIdeaCall(r.Context(), id); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			internalError(w, "get idea call", err)
+			return
+		}
+	}
 	if err := h.q.DeleteIdea(r.Context(), id); err != nil {
 		internalError(w, "delete idea", err)
 		return
 	}
+	// WithoutCancel: se o navegador desistir da resposta, o Discord não fica pela metade.
+	h.closeCall(context.WithoutCancel(r.Context()), call)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -201,6 +217,12 @@ func (h *Handler) SetStatus(w http.ResponseWriter, r *http.Request) {
 	if err := h.q.SetIdeaStatus(r.Context(), SetIdeaStatusParams{ID: id, Status: req.Status}); err != nil {
 		internalError(w, "set idea status", err)
 		return
+	}
+	// O grupo fechou: abre a call no Discord. O status já está salvo e não depende disso, então a falha só vai para o log.
+	if req.Status == "in_progress" && h.Bot.Token != "" {
+		if err := h.openCall(context.WithoutCancel(r.Context()), id); err != nil {
+			slog.Error("abrir call no discord", "idea", id, "err", err)
+		}
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -316,6 +338,7 @@ func (h *Handler) Profile(w http.ResponseWriter, r *http.Request) {
 
 // Get devolve uma ideia, só para quem está logado: o visitante fica na prévia do mural.
 // O autor recebe também a lista de interessados, com o discord_id para chamar cada um.
+// O autor e a lista recebem o link da call do grupo no Discord, quando ela existe.
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	userID, ok := h.loggedIn(w, r)
 	if !ok {
@@ -345,6 +368,16 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		resp.Interests = make([]interestResponse, 0, len(people)) // não-nil: o autor sem interessados recebe []
 		for _, p := range people {
 			resp.Interests = append(resp.Interests, interestResponse(p))
+		}
+	}
+	if row.AuthorID == userID || row.Interested {
+		call, err := h.q.GetIdeaCall(r.Context(), id)
+		if err != nil {
+			internalError(w, "get idea call", err)
+			return
+		}
+		if call.DiscordChannelID != nil {
+			resp.CallURL = new("https://discord.com/channels/" + h.Bot.GuildID + "/" + *call.DiscordChannelID)
 		}
 	}
 	writeJSON(w, http.StatusOK, resp)

@@ -62,7 +62,6 @@ Duas pernas que se apoiam: o mural de ideias e a aba de eventos.
 ## Futuro — junto com o professor ou vira rede social
 
 - Aba de professor com avaliação acadêmica das ideias (alguns projetos precisam de professor, outros não).
-- Bot do Discord que cria call automática quando o grupo fecha.
 - Build in public: acompanhamento diário do que o time fez, gera engajamento.
 - Seguir pessoas (vira feed e notificações).
 - Sugestão de convidar amigo do Discord.

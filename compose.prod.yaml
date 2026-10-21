@@ -47,6 +47,9 @@ services:
       DISCORD_GUILD_ID: ${DISCORD_GUILD_ID}
       # opcional: ids dos cargos de moderação, separados por vírgula; vazio = ninguém é moderador
       DISCORD_MOD_ROLE_IDS: ${DISCORD_MOD_ROLE_IDS:-}
+      # opcional: bot da call do grupo; vazio = sem call
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
+      DISCORD_CALLS_CATEGORY_ID: ${DISCORD_CALLS_CATEGORY_ID:-}
     depends_on:
       migrate:
         condition: service_completed_successfully

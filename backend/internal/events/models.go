@@ -27,17 +27,19 @@ type EventAttendee struct {
 }
 
 type Idea struct {
-	ID          int64
-	AuthorID    int64
-	Title       string
-	Description string
-	Course      string
-	Category    string
-	Slots       int32
-	Status      string
-	CreatedAt   time.Time
-	DoneAt      pgtype.Timestamptz
-	Skills      []string
+	ID               int64
+	AuthorID         int64
+	Title            string
+	Description      string
+	Course           string
+	Category         string
+	Slots            int32
+	Status           string
+	CreatedAt        time.Time
+	DoneAt           pgtype.Timestamptz
+	Skills           []string
+	DiscordRoleID    *string
+	DiscordChannelID *string
 }
 
 type Interest struct {

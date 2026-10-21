@@ -145,3 +145,20 @@ ORDER BY p.created_at DESC, i.id DESC;
 
 -- name: GetUser :one
 SELECT id, name, avatar_url, course, discord_id, skills FROM users WHERE id = $1;
+
+-- name: GetIdeaCall :one
+-- A call do grupo no Discord (docs/contratos/fatia-19-call-no-discord.md). members são os discord_id de quem recebe o cargo:
+-- o autor e a lista de interessados.
+SELECT i.title, i.discord_role_id, i.discord_channel_id,
+       ARRAY(SELECT u.discord_id FROM users u
+             WHERE u.discord_id IS NOT NULL
+               AND (u.id = i.author_id OR u.id IN (SELECT n.user_id FROM interests n WHERE n.idea_id = i.id))
+             ORDER BY u.id)::text[] AS members
+FROM ideas i
+WHERE i.id = $1;
+
+-- name: SetIdeaRole :exec
+UPDATE ideas SET discord_role_id = $2 WHERE id = $1;
+
+-- name: SetIdeaChannel :exec
+UPDATE ideas SET discord_channel_id = $2 WHERE id = $1;

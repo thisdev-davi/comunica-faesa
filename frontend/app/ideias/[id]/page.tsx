@@ -2,6 +2,7 @@ import { redirect, unstable_rethrow } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Avatar } from "../../components/Avatar";
+import { ButtonLink } from "../../components/Button";
 import { CallOnDiscord } from "../../components/CallOnDiscord";
 import { IdeaCard } from "../../components/IdeaCard";
 import { JoinButton } from "../../components/JoinButton";
@@ -48,7 +49,21 @@ async function IdeaDetail({ params }: { params: PageProps<"/ideias/[id]">["param
           open && <JoinButton url={`/api/ideas/${idea.id}/interest`} on={idea.interested} labels={["Quero participar", "Interessado"]} />
         }
       />
-      {idea.interested && <p className={styles.hint}>Você está na lista. O autor vai te chamar no Discord.</p>}
+      {idea.interested && (
+        <p className={styles.hint}>
+          {idea.call_url
+            ? "Você está no grupo. A call fica no Discord, só para quem está na lista."
+            : "Você está na lista. O autor vai te chamar no Discord."}
+        </p>
+      )}
+      {/* Só o autor e a lista recebem o link, e só depois que o grupo fechou (fatia 19). */}
+      {idea.call_url && (
+        <div className={styles.actions}>
+          <ButtonLink href={idea.call_url} reload target="_blank" rel="noopener noreferrer" icon="discord">
+            Entrar na call do grupo<span className="sr-only"> (abre em nova aba)</span>
+          </ButtonLink>
+        </div>
+      )}
       {!mine && !open && !idea.interested && <p className={styles.hint}>Esta ideia não está recebendo novos interessados.</p>}
       {mine && <AuthorPanel ideaId={idea.id} status={idea.status} />}
       {!mine && me.is_moderator && <ModeratorPanel ideaId={idea.id} />}

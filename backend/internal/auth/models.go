@@ -25,17 +25,19 @@ type EventAttendee struct {
 }
 
 type Idea struct {
-	ID          int64      `json:"id"`
-	AuthorID    int64      `json:"author_id"`
-	Title       string     `json:"title"`
-	Description string     `json:"description"`
-	Course      string     `json:"course"`
-	Category    string     `json:"category"`
-	Slots       int32      `json:"slots"`
-	Status      string     `json:"status"`
-	CreatedAt   time.Time  `json:"created_at"`
-	DoneAt      *time.Time `json:"done_at"`
-	Skills      []string   `json:"skills"`
+	ID               int64      `json:"id"`
+	AuthorID         int64      `json:"author_id"`
+	Title            string     `json:"title"`
+	Description      string     `json:"description"`
+	Course           string     `json:"course"`
+	Category         string     `json:"category"`
+	Slots            int32      `json:"slots"`
+	Status           string     `json:"status"`
+	CreatedAt        time.Time  `json:"created_at"`
+	DoneAt           *time.Time `json:"done_at"`
+	Skills           []string   `json:"skills"`
+	DiscordRoleID    *string    `json:"discord_role_id"`
+	DiscordChannelID *string    `json:"discord_channel_id"`
 }
 
 type Interest struct {

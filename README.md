@@ -30,6 +30,7 @@ Em desenvolvimento, construído em fatias verticais (tela → API → banco).
 - [x] Fatia 16: o criador e o moderador editam e apagam o evento
 - [x] Fatia 17: filtros do mural (status, curso, categoria e habilidade), para quem está logado
 - [x] Fatia 18: busca por texto no título e na descrição, sem diferenciar maiúscula nem acento
+- [x] Fatia 19: o grupo fechou (ideia Em andamento), o bot do Discord cria a call e o cargo do grupo
 
 Comentários nas ideias saíram do MVP e foram para a fila ([IDEIA](docs/IDEIA.md)).
 
@@ -76,6 +77,8 @@ O login usa OAuth do Discord e só deixa entrar quem está no servidor da comuni
 2. No Discord, ative o **Modo desenvolvedor** (Configurações → Avançado), clique com o botão direito no servidor da comunidade → **Copiar ID** e cole em `DISCORD_GUILD_ID`.
 3. Crie um convite sem expiração do servidor e cole em `DISCORD_INVITE_URL`.
 4. Opcional, para a moderação: em **Configurações do servidor → Cargos**, clique com o botão direito nos cargos Admin e Moderação → **Copiar ID** e cole os dois em `DISCORD_MOD_ROLE_IDS`, separados por vírgula. Quem tem um desses cargos vira moderador no próximo login (ver abaixo).
+
+5. Opcional, para a call do grupo ([fatia 19](docs/contratos/fatia-19-call-no-discord.md)): no Developer Portal, em **Bot**, clique em **Reset Token** e cole o token em `DISCORD_BOT_TOKEN`. Ponha o bot no servidor abrindo, como admin, `https://discord.com/oauth2/authorize?client_id=<DISCORD_CLIENT_ID>&scope=bot&permissions=271649808` (Gerenciar Cargos, Gerenciar Canais, Ver Canais, Conectar, Falar, Enviar Mensagens e Ler Histórico). No servidor, crie uma categoria para os canais dos grupos (ex.: "Projetos"), copie o ID dela e cole em `DISCORD_CALLS_CATEGORY_ID`. Sem o token, a API sobe sem a call.
 
 #### Cargo de moderação
 

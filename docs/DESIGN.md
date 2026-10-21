@@ -86,7 +86,7 @@ Regras de interface do front: visual, padrões de tela, texto e acessibilidade. 
   | `circle-alert` | erro |
   | `sun` / `moon` | tema |
 
-- A marca do Discord (simple-icons) só aparece em botões que levam ao Discord: "Entrar com Discord" e "Chamar no Discord".
+- A marca do Discord (simple-icons) só aparece em botões que levam ao Discord: "Entrar com Discord", "Chamar no Discord" e "Entrar na call do grupo".
 - Sem emoji no lugar de ícone.
 
 ## Telas e UX
@@ -147,6 +147,7 @@ Regras de interface do front: visual, padrões de tela, texto e acessibilidade. 
   - o card inteiro (`full`), sem cortes, com as habilidades procuradas depois do rótulo "Procura" (a linha some se a ideia não pede nada);
   - quem não é autor vê o "Quero participar" (pílula `accent` com a mão levantada), que vira "Interessado" (pílula `joined`: `accent-soft` com borda `accent`, ícone `check`, `aria-pressed`), só enquanto a ideia está Aberta. O check entra com um pulo curto só no clique, não a cada visita, e sem animação com `prefers-reduced-motion`;
   - o interessado lê "Você está na lista. O autor vai te chamar no Discord.";
+  - depois que o grupo fechou e a call existe (fatia 19), o interessado lê "Você está no grupo. A call fica no Discord, só para quem está na lista.", e ele e o autor veem, logo abaixo do card, "Entrar na call do grupo" (`primary`, marca do Discord, abre em nova aba). Quem não está no grupo não vê nada;
   - na ideia Em andamento ou Concluída, o botão some para todos, e quem não está na lista lê "Esta ideia não está recebendo novos interessados.";
   - o autor vê o painel "Sua ideia":
     - o grupo "Status", três selos clicáveis com as medidas do selo do card (32px de altura, 44px no toque; `radius-sm`; 13px/600). O marcado (`aria-pressed`) é o próprio selo do card: `status-*-soft` de fundo, texto e borda em `status-*` e losango cheio. Os outros são neutros (`surface-raised`, borda `line-strong`, texto `ink-muted`) com o losango vazado na cor do status; no hover, a borda ganha a cor do status. O clique já salva. Na tela estreita, os selos quebram linha;
