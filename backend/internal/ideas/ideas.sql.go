@@ -37,17 +37,10 @@ func (q *Queries) AddInterest(ctx context.Context, arg AddInterestParams) (int64
 
 const createIdea = `-- name: CreateIdea :one
 
-WITH i AS (
-    INSERT INTO ideas (author_id, title, description, course, category, slots, skills)
-    SELECT $1, $2, $3, $4, $5, $6, $7
-    FROM users WHERE id = $1 AND course IS NOT NULL
-    RETURNING id, author_id, title, description, course, category, slots, status, created_at, done_at, skills
-)
-SELECT i.id, i.title, i.description, i.course, i.category, i.slots, i.status, i.created_at, i.done_at, i.skills,
-       u.id AS author_id, u.name AS author_name, u.avatar_url AS author_avatar_url,
-       0::bigint AS interest_count, false AS interested, '[]'::json AS interest_faces
-FROM i
-JOIN users u ON u.id = i.author_id
+INSERT INTO ideas (author_id, title, description, course, category, slots, skills)
+SELECT $1, $2, $3, $4, $5, $6, $7
+FROM users WHERE id = $1 AND course IS NOT NULL
+RETURNING id
 `
 
 type CreateIdeaParams struct {
@@ -60,31 +53,12 @@ type CreateIdeaParams struct {
 	Skills      []string
 }
 
-type CreateIdeaRow struct {
-	ID              int64
-	Title           string
-	Description     string
-	Course          string
-	Category        string
-	Slots           int32
-	Status          string
-	CreatedAt       time.Time
-	DoneAt          *time.Time
-	Skills          []string
-	AuthorID        int64
-	AuthorName      string
-	AuthorAvatarUrl *string
-	InterestCount   int64
-	Interested      bool
-	InterestFaces   []byte
-}
-
-// Create, Update, List, ListAuthor, ListParticipating e Get devolvem as mesmas colunas, na mesma ordem: assim as structs geradas são conversíveis entre si.
+// List, ListAuthor, ListParticipating e Get devolvem as mesmas colunas, na mesma ordem: assim as structs geradas são conversíveis entre si.
 // interest_count e interested dizem quantos marcaram "quero participar" e se quem pede (viewer) é um deles; viewer 0 = visitante.
 // interest_faces são os 8 primeiros interessados (id, nome e foto) em JSON, na ordem de chegada; o visitante recebe [].
-// Ideia recém-criada ainda não tem interessados: as duas colunas saem fixas.
 // Só grava se o autor já escolheu o curso; sem curso não volta linha (pgx.ErrNoRows), e o handler responde 403.
-func (q *Queries) CreateIdea(ctx context.Context, arg CreateIdeaParams) (CreateIdeaRow, error) {
+// Devolve só o id: o handler busca a ideia completa com o GetIdea.
+func (q *Queries) CreateIdea(ctx context.Context, arg CreateIdeaParams) (int64, error) {
 	row := q.db.QueryRow(ctx, createIdea,
 		arg.AuthorID,
 		arg.Title,
@@ -94,26 +68,9 @@ func (q *Queries) CreateIdea(ctx context.Context, arg CreateIdeaParams) (CreateI
 		arg.Slots,
 		arg.Skills,
 	)
-	var i CreateIdeaRow
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.Description,
-		&i.Course,
-		&i.Category,
-		&i.Slots,
-		&i.Status,
-		&i.CreatedAt,
-		&i.DoneAt,
-		&i.Skills,
-		&i.AuthorID,
-		&i.AuthorName,
-		&i.AuthorAvatarUrl,
-		&i.InterestCount,
-		&i.Interested,
-		&i.InterestFaces,
-	)
-	return i, err
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
 const deleteIdea = `-- name: DeleteIdea :exec
@@ -229,18 +186,6 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (GetUserRow, error) {
 		&i.Skills,
 	)
 	return i, err
-}
-
-const isModerator = `-- name: IsModerator :one
-SELECT is_moderator FROM users WHERE id = $1
-`
-
-// O moderador apaga qualquer ideia (docs/contratos/fatia-15-cargo-de-moderacao.md).
-func (q *Queries) IsModerator(ctx context.Context, id int64) (bool, error) {
-	row := q.db.QueryRow(ctx, isModerator, id)
-	var is_moderator bool
-	err := row.Scan(&is_moderator)
-	return is_moderator, err
 }
 
 const listAuthorIdeas = `-- name: ListAuthorIdeas :many
@@ -572,21 +517,9 @@ func (q *Queries) SetIdeaStatus(ctx context.Context, arg SetIdeaStatusParams) er
 	return err
 }
 
-const updateIdea = `-- name: UpdateIdea :one
-WITH i AS (
-    UPDATE ideas SET title = $2, description = $3, course = $4, category = $5, slots = $6, skills = $7
-    WHERE ideas.id = $1
-    RETURNING id, author_id, title, description, course, category, slots, status, created_at, done_at, skills
-)
-SELECT i.id, i.title, i.description, i.course, i.category, i.slots, i.status, i.created_at, i.done_at, i.skills,
-       u.id AS author_id, u.name AS author_name, u.avatar_url AS author_avatar_url,
-       (SELECT count(*) FROM interests n WHERE n.idea_id = i.id) AS interest_count,
-       false AS interested,
-       (SELECT coalesce(json_agg(json_build_object('id', f.id, 'name', f.name, 'avatar_url', f.avatar_url) ORDER BY f.created_at, f.id), '[]')
-        FROM (SELECT u2.id, u2.name, u2.avatar_url, n.created_at FROM interests n JOIN users u2 ON u2.id = n.user_id
-              WHERE n.idea_id = i.id ORDER BY n.created_at, n.user_id LIMIT 8) f)::json AS interest_faces
-FROM i
-JOIN users u ON u.id = i.author_id
+const updateIdea = `-- name: UpdateIdea :exec
+UPDATE ideas SET title = $2, description = $3, course = $4, category = $5, slots = $6, skills = $7
+WHERE id = $1
 `
 
 type UpdateIdeaParams struct {
@@ -599,29 +532,9 @@ type UpdateIdeaParams struct {
 	Skills      []string
 }
 
-type UpdateIdeaRow struct {
-	ID              int64
-	Title           string
-	Description     string
-	Course          string
-	Category        string
-	Slots           int32
-	Status          string
-	CreatedAt       time.Time
-	DoneAt          *time.Time
-	Skills          []string
-	AuthorID        int64
-	AuthorName      string
-	AuthorAvatarUrl *string
-	InterestCount   int64
-	Interested      bool
-	InterestFaces   []byte
-}
-
-// Troca os campos do postar. O autor não participa da própria ideia, então interested sai fixo.
-// ideas.id e não só id: com o id solto, o sqlc 1.29 acusa referência ambígua no UPDATE dentro do WITH.
-func (q *Queries) UpdateIdea(ctx context.Context, arg UpdateIdeaParams) (UpdateIdeaRow, error) {
-	row := q.db.QueryRow(ctx, updateIdea,
+// Troca os campos do postar; o handler busca a ideia completa com o GetIdea.
+func (q *Queries) UpdateIdea(ctx context.Context, arg UpdateIdeaParams) error {
+	_, err := q.db.Exec(ctx, updateIdea,
 		arg.ID,
 		arg.Title,
 		arg.Description,
@@ -630,24 +543,5 @@ func (q *Queries) UpdateIdea(ctx context.Context, arg UpdateIdeaParams) (UpdateI
 		arg.Slots,
 		arg.Skills,
 	)
-	var i UpdateIdeaRow
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.Description,
-		&i.Course,
-		&i.Category,
-		&i.Slots,
-		&i.Status,
-		&i.CreatedAt,
-		&i.DoneAt,
-		&i.Skills,
-		&i.AuthorID,
-		&i.AuthorName,
-		&i.AuthorAvatarUrl,
-		&i.InterestCount,
-		&i.Interested,
-		&i.InterestFaces,
-	)
-	return i, err
+	return err
 }

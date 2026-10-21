@@ -16,9 +16,14 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// loggedAs troca a sessão de verdade por um usuário fixo (0 = visitante).
-func loggedAs(id int64) func(*http.Request) (int64, error) {
-	return func(*http.Request) (int64, error) { return id, nil }
+// loggedAs troca a sessão de verdade por um usuário fixo (0 = visitante), sem moderação.
+func loggedAs(id int64) func(*http.Request) (int64, bool, error) {
+	return func(*http.Request) (int64, bool, error) { return id, false, nil }
+}
+
+// moderatorAs é o loggedAs de quem tem o cargo de moderação.
+func moderatorAs(id int64) func(*http.Request) (int64, bool, error) {
+	return func(*http.Request) (int64, bool, error) { return id, true, nil }
 }
 
 func do(t *testing.T, hf http.HandlerFunc, method, body string) *httptest.ResponseRecorder {
@@ -116,7 +121,7 @@ func TestValidateFuture(t *testing.T) {
 }
 
 func TestSessionErrorIs500(t *testing.T) {
-	failing := func(*http.Request) (int64, error) { return 0, errors.New("banco fora") }
+	failing := func(*http.Request) (int64, bool, error) { return 0, false, errors.New("banco fora") }
 	h := NewHandler(nil, failing)
 	for name, hf := range map[string]http.HandlerFunc{
 		"POST": h.Create, "GET agenda": h.List, "GET um": h.Get, "PUT presença": h.PutAttendance, "DELETE presença": h.DeleteAttendance,
@@ -306,10 +311,7 @@ func TestUpdateAndDelete(t *testing.T) {
 		t.Fatal(err)
 	}
 	otherID, modID := authorID+1, authorID+2 // RESTART IDENTITY no testDB: os ids saem em sequência
-	if _, err := pool.Exec(ctx, "UPDATE users SET is_moderator = true WHERE id = $1", modID); err != nil {
-		t.Fatal(err)
-	}
-	author, other, mod, visitor := NewHandler(pool, loggedAs(authorID)), NewHandler(pool, loggedAs(otherID)), NewHandler(pool, loggedAs(modID)), NewHandler(pool, loggedAs(0))
+	author, other, mod, visitor := NewHandler(pool, loggedAs(authorID)), NewHandler(pool, loggedAs(otherID)), NewHandler(pool, moderatorAs(modID)), NewHandler(pool, loggedAs(0))
 
 	rec := do(t, author.Create, http.MethodPost, body(future(time.Hour)))
 	if rec.Code != 201 {

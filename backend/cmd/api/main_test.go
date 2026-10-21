@@ -14,7 +14,7 @@ import (
 // 401 aqui quer dizer "passou pela proteção e chegou no handler".
 func TestRoutesBlockCrossOriginWrites(t *testing.T) {
 	a := auth.NewHandler(nil, "id", "secret", "http://localhost/callback", "guild", nil)
-	api := routes(a, ideas.NewHandler(nil, a.UserID), events.NewHandler(nil, a.UserID))
+	api := routes(a, ideas.NewHandler(nil, a.Viewer), events.NewHandler(nil, a.Viewer))
 	cases := []struct {
 		name          string
 		method, path  string

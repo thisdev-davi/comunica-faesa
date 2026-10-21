@@ -266,17 +266,25 @@ func TestLoginMeLogout(t *testing.T) {
 	}
 
 	// Cargo de moderação (fatia 15): relido a cada login. Um cargo qualquer não conta; um dos configurados liga; sem ele, desliga.
+	// O Viewer, que ideias e eventos recebem, lê o mesmo cargo da sessão.
 	for _, tc := range []struct {
 		roles []string
 		want  string
+		mod   bool
 	}{
-		{[]string{"role-outro"}, `"is_moderator":false`},
-		{[]string{"role-outro", "role-admin"}, `"is_moderator":true`},
-		{nil, `"is_moderator":false`},
+		{[]string{"role-outro"}, `"is_moderator":false`, false},
+		{[]string{"role-outro", "role-admin"}, `"is_moderator":true`, true},
+		{nil, `"is_moderator":false`, false},
 	} {
 		fake.roles = tc.roles
-		if body := me(login("/")).Body.String(); !strings.Contains(body, tc.want) {
+		c := login("/")
+		if body := me(c).Body.String(); !strings.Contains(body, tc.want) {
 			t.Errorf("cargos %v: %s, quer %s", tc.roles, body, tc.want)
+		}
+		req := httptest.NewRequest(http.MethodGet, "/api/ideas", nil)
+		req.AddCookie(c)
+		if id, mod, err := h.Viewer(req); id != 1 || mod != tc.mod || err != nil {
+			t.Errorf("cargos %v: Viewer = %d, %v, %v, quer 1, %v, nil", tc.roles, id, mod, err, tc.mod)
 		}
 	}
 

@@ -18,9 +18,14 @@ import (
 
 const validBody = `{"title":"App de carona","description":"Quero montar um app","course":"cc","category":"mobile","slots":3}`
 
-// loggedAs troca a sessão de verdade por um usuário fixo (0 = visitante).
-func loggedAs(id int64) func(*http.Request) (int64, error) {
-	return func(*http.Request) (int64, error) { return id, nil }
+// loggedAs troca a sessão de verdade por um usuário fixo (0 = visitante), sem moderação.
+func loggedAs(id int64) func(*http.Request) (int64, bool, error) {
+	return func(*http.Request) (int64, bool, error) { return id, false, nil }
+}
+
+// moderatorAs é o loggedAs de quem tem o cargo de moderação.
+func moderatorAs(id int64) func(*http.Request) (int64, bool, error) {
+	return func(*http.Request) (int64, bool, error) { return id, true, nil }
 }
 
 func do(t *testing.T, hf http.HandlerFunc, method, body string) *httptest.ResponseRecorder {
@@ -102,7 +107,7 @@ func TestCreateRejectsBadInput(t *testing.T) {
 }
 
 func TestSessionErrorIs500(t *testing.T) {
-	failing := func(*http.Request) (int64, error) { return 0, errors.New("banco fora") }
+	failing := func(*http.Request) (int64, bool, error) { return 0, false, errors.New("banco fora") }
 	h := NewHandler(nil, failing)
 	for method, hf := range map[string]http.HandlerFunc{"POST": h.Create, "GET": h.List} {
 		rec := do(t, hf, method, validBody)
@@ -995,12 +1000,12 @@ func TestModeratorDeletes(t *testing.T) {
 	var authorID, modID int64
 	err := pool.QueryRow(ctx, `INSERT INTO users (name, course) VALUES ('Autora de Teste', 'cc') RETURNING id`).Scan(&authorID)
 	if err == nil {
-		err = pool.QueryRow(ctx, `INSERT INTO users (name, is_moderator) VALUES ('Moderador de Teste', true) RETURNING id`).Scan(&modID)
+		err = pool.QueryRow(ctx, `INSERT INTO users (name) VALUES ('Moderador de Teste') RETURNING id`).Scan(&modID)
 	}
 	if err != nil {
 		t.Fatal(err)
 	}
-	author, mod := NewHandler(pool, loggedAs(authorID)), NewHandler(pool, loggedAs(modID))
+	author, mod := NewHandler(pool, loggedAs(authorID)), NewHandler(pool, moderatorAs(modID))
 	rec := do(t, author.Create, http.MethodPost, validBody)
 	if rec.Code != 201 {
 		t.Fatalf("POST: %d (%s)", rec.Code, rec.Body)

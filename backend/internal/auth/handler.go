@@ -174,13 +174,14 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// UserID devolve o id do usuário logado, ou 0 para visitante. Outros domínios recebem esta função para saber quem é o autor.
-func (h *Handler) UserID(r *http.Request) (int64, error) {
+// Viewer devolve o id do usuário logado (0 para visitante) e se é moderador, os dois da mesma consulta da sessão.
+// Outros domínios recebem esta função para saber quem pede e o que pode.
+func (h *Handler) Viewer(r *http.Request) (userID int64, moderator bool, err error) {
 	u, err := h.session(r)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return 0, nil
+		return 0, false, nil
 	}
-	return u.ID, err
+	return u.ID, u.IsModerator, err
 }
 
 // session busca o usuário do cookie; pgx.ErrNoRows quando não há sessão válida (sem cookie, desconhecida ou expirada).

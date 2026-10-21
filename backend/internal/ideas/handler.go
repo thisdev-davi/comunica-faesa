@@ -38,12 +38,13 @@ var (
 
 type Handler struct {
 	q *Queries
-	// userID diz quem está logado (0 = visitante). Recebe uma função, não o pacote auth: os testes trocam por um stub.
-	userID func(*http.Request) (int64, error)
+	// viewer diz quem está logado (0 = visitante) e se é moderador, os dois lidos da mesma sessão.
+	// Recebe uma função, não o pacote auth: os testes trocam por um stub.
+	viewer func(*http.Request) (userID int64, moderator bool, err error)
 }
 
-func NewHandler(db DBTX, userID func(*http.Request) (int64, error)) *Handler {
-	return &Handler{q: New(db), userID: userID}
+func NewHandler(db DBTX, viewer func(*http.Request) (userID int64, moderator bool, err error)) *Handler {
+	return &Handler{q: New(db), viewer: viewer}
 }
 
 // Corpo do POST e do PUT: postar e editar trocam os mesmos campos.
@@ -115,7 +116,7 @@ type errorResponse struct {
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	authorID, ok := h.loggedIn(w, r)
+	authorID, _, ok := h.loggedIn(w, r)
 	if !ok {
 		return
 	}
@@ -124,7 +125,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	if !readBody(w, r, &req) {
 		return
 	}
-	row, err := h.q.CreateIdea(r.Context(), CreateIdeaParams{
+	id, err := h.q.CreateIdea(r.Context(), CreateIdeaParams{
 		AuthorID:    authorID,
 		Title:       req.Title,
 		Description: req.Description,
@@ -141,12 +142,12 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "create idea", err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, toResponse(ListIdeasRow(row)))
+	h.writeIdea(w, r, http.StatusCreated, id, authorID)
 }
 
 // Update troca os campos da ideia (os mesmos do postar). Só o autor; status, autor e data não mudam por aqui.
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
-	id, ok := h.authorOf(w, r, false)
+	userID, id, ok := h.authorOf(w, r, false)
 	if !ok {
 		return
 	}
@@ -154,7 +155,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	if !readBody(w, r, &req) {
 		return
 	}
-	row, err := h.q.UpdateIdea(r.Context(), UpdateIdeaParams{
+	err := h.q.UpdateIdea(r.Context(), UpdateIdeaParams{
 		ID:          id,
 		Title:       req.Title,
 		Description: req.Description,
@@ -163,20 +164,30 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		Slots:       int32(req.Slots), // seguro: validate garante 1–20
 		Skills:      req.Skills,
 	})
-	if errors.Is(err, pgx.ErrNoRows) { // apagada entre o authorOf e aqui
-		writeJSON(w, http.StatusNotFound, errorResponse{Error: "not_found"})
-		return
-	}
 	if err != nil {
 		internalError(w, "update idea", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, toResponse(ListIdeasRow(row)))
+	h.writeIdea(w, r, http.StatusOK, id, userID)
+}
+
+// writeIdea responde com a ideia que o POST ou o PUT acabou de gravar, no mesmo formato do GET (sem a lista de interessados).
+func (h *Handler) writeIdea(w http.ResponseWriter, r *http.Request, status int, id, viewer int64) {
+	row, err := h.q.GetIdea(r.Context(), GetIdeaParams{ID: id, Viewer: viewer})
+	if errors.Is(err, pgx.ErrNoRows) { // apagada entre a gravação e aqui (o UPDATE de uma ideia que sumiu não acusa erro)
+		writeJSON(w, http.StatusNotFound, errorResponse{Error: "not_found"})
+		return
+	}
+	if err != nil {
+		internalError(w, "get idea", err)
+		return
+	}
+	writeJSON(w, status, toResponse(ListIdeasRow(row)))
 }
 
 // Delete apaga a ideia de vez, e os interessados vão junto (ON DELETE CASCADE). O autor ou um moderador.
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
-	id, ok := h.authorOf(w, r, true)
+	_, id, ok := h.authorOf(w, r, true)
 	if !ok {
 		return
 	}
@@ -190,7 +201,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 // SetStatus troca o status da ideia. Só o autor. Só ideia aberta recebe interessados (PutInterest),
 // então trocar o status é também o jeito de travar ou destravar a lista.
 func (h *Handler) SetStatus(w http.ResponseWriter, r *http.Request) {
-	id, ok := h.authorOf(w, r, false)
+	_, id, ok := h.authorOf(w, r, false)
 	if !ok {
 		return
 	}
@@ -208,7 +219,7 @@ func (h *Handler) SetStatus(w http.ResponseWriter, r *http.Request) {
 // List devolve o mural (abertas e em andamento) ou, com ?status=done, a vitrine de concluídas,
 // com os filtros da fatia 17 e a busca da 18. Tudo para quem está logado, só as primeiras para visitante.
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
-	userID, err := h.userID(r)
+	userID, _, err := h.viewer(r)
 	if err != nil {
 		internalError(w, "session", err)
 		return
@@ -248,7 +259,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 // Mine devolve todas as ideias de quem está logado, em qualquer status (a página "Minhas ideias").
 func (h *Handler) Mine(w http.ResponseWriter, r *http.Request) {
-	userID, ok := h.loggedIn(w, r)
+	userID, _, ok := h.loggedIn(w, r)
 	if !ok {
 		return
 	}
@@ -267,7 +278,7 @@ func (h *Handler) Mine(w http.ResponseWriter, r *http.Request) {
 // Profile é o perfil do aluno (docs/contratos/fatia-10-perfil.md): quem é, as ideias que postou e as que participa.
 // Mora em ideas porque, tirando o cabeçalho, é tudo ideia: reaproveita as queries e o toResponse.
 func (h *Handler) Profile(w http.ResponseWriter, r *http.Request) {
-	viewer, ok := h.loggedIn(w, r)
+	viewer, _, ok := h.loggedIn(w, r)
 	if !ok {
 		return
 	}
@@ -317,7 +328,7 @@ func (h *Handler) Profile(w http.ResponseWriter, r *http.Request) {
 // Get devolve uma ideia, só para quem está logado: o visitante fica na prévia do mural.
 // O autor recebe também a lista de interessados, com o discord_id para chamar cada um.
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
-	userID, ok := h.loggedIn(w, r)
+	userID, _, ok := h.loggedIn(w, r)
 	if !ok {
 		return
 	}
@@ -353,7 +364,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 // PutInterest é o "quero participar": sem aprovação, a pessoa entra direto na lista. Repetir não muda nada.
 // Só ideia aberta recebe interessados, e o autor não entra na própria.
 func (h *Handler) PutInterest(w http.ResponseWriter, r *http.Request) {
-	userID, ok := h.loggedIn(w, r)
+	userID, _, ok := h.loggedIn(w, r)
 	if !ok {
 		return
 	}
@@ -395,7 +406,7 @@ func (h *Handler) PutInterest(w http.ResponseWriter, r *http.Request) {
 
 // DeleteInterest é o "desistir". Responde 204 mesmo sem interesse ou sem ideia: o resultado é o mesmo, a pessoa não está na lista.
 func (h *Handler) DeleteInterest(w http.ResponseWriter, r *http.Request) {
-	userID, ok := h.loggedIn(w, r)
+	userID, _, ok := h.loggedIn(w, r)
 	if !ok {
 		return
 	}
@@ -408,57 +419,46 @@ func (h *Handler) DeleteInterest(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// loggedIn devolve quem está logado; sem sessão já responde 401 (ou 500 se a sessão falhou) e devolve ok = false.
-func (h *Handler) loggedIn(w http.ResponseWriter, r *http.Request) (userID int64, ok bool) {
-	userID, err := h.userID(r)
+// loggedIn devolve quem está logado e se é moderador; sem sessão já responde 401 (ou 500 se a sessão falhou) e devolve ok = false.
+func (h *Handler) loggedIn(w http.ResponseWriter, r *http.Request) (userID int64, moderator, ok bool) {
+	userID, moderator, err := h.viewer(r)
 	if err != nil {
 		internalError(w, "session", err)
-		return 0, false
+		return 0, false, false
 	}
 	if userID == 0 {
 		writeJSON(w, http.StatusUnauthorized, errorResponse{Error: "unauthenticated"})
-		return 0, false
+		return 0, false, false
 	}
-	return userID, true
+	return userID, moderator, true
 }
 
-// authorOf devolve o id da ideia da rota quando quem chama é o autor dela (ou um moderador, com orModerator).
+// authorOf devolve quem chama e o id da ideia da rota quando quem chama é o autor dela (ou um moderador, com orModerator).
 // Senão já responde 401 (sem sessão), 404 (ideia não existe) ou 403 (não é o autor) e devolve ok = false.
-func (h *Handler) authorOf(w http.ResponseWriter, r *http.Request, orModerator bool) (id int64, ok bool) {
-	userID, ok := h.loggedIn(w, r)
+func (h *Handler) authorOf(w http.ResponseWriter, r *http.Request, orModerator bool) (userID, id int64, ok bool) {
+	userID, moderator, ok := h.loggedIn(w, r)
 	if !ok {
-		return 0, false
+		return 0, 0, false
 	}
 	id, ok = pathID(r)
 	if !ok {
 		writeJSON(w, http.StatusNotFound, errorResponse{Error: "not_found"})
-		return 0, false
+		return 0, 0, false
 	}
 	idea, err := h.q.GetIdeaAuthor(r.Context(), id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		writeJSON(w, http.StatusNotFound, errorResponse{Error: "not_found"})
-		return 0, false
+		return 0, 0, false
 	}
 	if err != nil {
 		internalError(w, "get idea author", err)
-		return 0, false
+		return 0, 0, false
 	}
-	if idea.AuthorID == userID {
-		return id, true
-	}
-	// O banco só é consultado de novo quando a regra aceita moderador e quem chama não é o autor.
-	if orModerator {
-		mod, err := h.q.IsModerator(r.Context(), userID)
-		if err != nil {
-			internalError(w, "is moderator", err)
-			return 0, false
-		}
-		if mod {
-			return id, true
-		}
+	if idea.AuthorID == userID || (orModerator && moderator) {
+		return userID, id, true
 	}
 	writeJSON(w, http.StatusForbidden, errorResponse{Error: "not_author"})
-	return 0, false
+	return 0, 0, false
 }
 
 // pathID lê o {id} da rota. Id que não é inteiro positivo é só uma ideia que não existe: quem chama responde 404 sem ir ao banco.
